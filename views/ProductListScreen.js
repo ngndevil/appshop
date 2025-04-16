@@ -30,7 +30,7 @@ export default function ProductListScreen() {
   }, [navigation]);
 
   const fetchData = async () => {
-    try {
+      try {
       const querySnapshot = await getDocs(collection(db, 'product'));
       const items = querySnapshot.docs.map(doc => ({
         id: doc.id,
@@ -38,8 +38,8 @@ export default function ProductListScreen() {
       }));
       console.log('Fetched products:', items); // Debug
       setProducts(items);
-    } catch (error) {
-      console.error('Error fetching products:', error);
+      } catch (error) {
+        console.error('Error fetching products:', error);
       Alert.alert('Error', 'Failed to fetch products. Please try again later.');
     } finally {
       setLoading(false);
@@ -76,7 +76,7 @@ export default function ProductListScreen() {
         <ActivityIndicator size="large" color="#0000ff" />
         <Text style={styles.loadingText}>Loading products...</Text>
       </View>
-    );
+  );
   }
 
   if (!isAuthenticated) {

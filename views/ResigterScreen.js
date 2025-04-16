@@ -2,16 +2,15 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import { auth } from '../constants/firebaseConfig';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { Ionicons } from '@expo/vector-icons'; // Dùng icon cho các nút Apple/Google/Facebook
-import Checkbox from 'expo-checkbox'; // Dùng checkbox cho Terms & Condition
+import { Ionicons } from '@expo/vector-icons';
+import Checkbox from 'expo-checkbox';
 
 const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [secureTextEntry, setSecureTextEntry] = useState(true); // Ẩn/hiện mật khẩu
-  const [isChecked, setChecked] = useState(false); // Checkbox trạng thái
-
+  const [secureTextEntry, setSecureTextEntry] = useState(true);
+  const [isChecked, setChecked] = useState(false); 
   const handleRegister = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!name) {
@@ -36,7 +35,7 @@ const RegisterScreen = ({ navigation }) => {
       .then((userCredential) => {
         const user = userCredential.user;
         Alert.alert('Registration Successful', `Welcome ${user.email}`);
-        navigation.replace('LoginScreen');
+        navigation.navigate('LoginScreen');
       })
       .catch((error) => {
         console.log('Register error:', error);
