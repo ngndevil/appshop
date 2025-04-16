@@ -9,7 +9,7 @@ const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [secureTextEntry, setSecureTextEntry] = useState(true);
+  const [secureTextEntry, setSecureTextEntry] = useState(true); // Ẩn/hiện mật khẩu
   const [isChecked, setChecked] = useState(false); 
   const handleRegister = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

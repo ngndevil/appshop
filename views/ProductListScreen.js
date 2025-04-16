@@ -15,14 +15,14 @@ export default function ProductListScreen() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        console.log('User authenticated:', user.email); // Debug
+        console.log('User authenticated:', user.email);
         setIsAuthenticated(true);
         fetchData();
       } else {
-        console.log('User not authenticated, redirecting to LoginScreen'); // Debug
+        console.log('User not authenticated, redirecting to LoginScreen');
         setIsAuthenticated(false);
-        setLoading(false); // Đặt loading thành false để tránh treo màn hình
-        navigation.replace('LoginScreen'); // Redirect to login if not authenticated
+        setLoading(false); 
+        navigation.replace('LoginScreen');
       }
     });
 

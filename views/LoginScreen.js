@@ -47,7 +47,7 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.logo}>Insightlancer</Text>
+      <Image source={require ('../assets/images/icon.jpg')} style={styles.logo}/>
       <Text style={styles.title}>Sign In</Text>
       <Text style={styles.subtitle}>Hi! Welcome back, you’ve been missed</Text>
       <TextInput
@@ -111,14 +111,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 20,
     backgroundColor: '#fff',
   },
   logo: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
-    textAlign: 'center',
+    width: 200,
+    height: 200,
+    resizeMode: 'contain',
     marginBottom: 20,
   },
   title: {
@@ -135,6 +135,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   input: {
+    width: '100%',
     height: 50,
     borderColor: '#ccc',
     borderWidth: 1,
@@ -169,6 +170,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   signInButton: {
+    width: '100%',
     backgroundColor: '#8B4513',
     paddingVertical: 15,
     borderRadius: 8,
