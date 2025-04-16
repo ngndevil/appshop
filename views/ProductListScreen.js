@@ -66,7 +66,9 @@ export default function ProductListScreen() {
       />
       <Text style={styles.name}>{item.product_name || 'Unnamed Product'}</Text>
       <Text style={styles.price}>{(item.price || 0).toLocaleString()}₫</Text>
+      <Text style={styles.stock}>{'Số lượng: '+item.stock || 'out stock'}</Text>
       <Text style={styles.description}>{item.description || 'No description'}</Text>
+      
     </View>
   );
 
@@ -128,6 +130,10 @@ const styles = StyleSheet.create({
   },
   price: {
     color: 'green',
+    marginTop: 4,
+  },
+  stock: {
+    color: 'gray',
     marginTop: 4,
   },
   description: {
