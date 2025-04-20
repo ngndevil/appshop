@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import MultiSlider from '@ptomasroos/react-native-multi-slider';
 import Header from '../components/common/Header';
-import ProductCard from '../components/products/ProductCard'; // ✅ Thêm dòng này
+import ProductCard from '../components/products/ProductCard';
 
 export default function SearchResultsScreen({ route }) {
   const { searchQuery, products = [] } = route.params || {};
