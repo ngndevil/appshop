@@ -7,18 +7,23 @@ import { getImageUrl } from '../../constants/firebaseStorage.ts';
 const ProductCard = ({ product }) => {
   const navigation = useNavigation();
   const { cartItems, setCartItems } = useCart();
-  const [imageUrl, setImageUrl] = useState('https://via.placeholder.com/150');
+  const [imageUrl, setImageUrl] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchImageUrl = async () => {
+    const fetchImage = async () => {
       if (product.image_url) {
-        const url = await getImageUrl(product.image_url);
-        setImageUrl(url);
+        if (product.image_url.startsWith('http')) {
+          setImageUrl(product.image_url); // Full URL (e.g., imgur)
+        } else {
+          const url = await getImageUrl(product.image_url); // Firebase Storage
+          setImageUrl(url);
+        }
       }
       setLoading(false);
     };
-    fetchImageUrl();
+
+    fetchImage();
   }, [product.image_url]);
 
   const handleAddToCart = () => {
@@ -44,11 +49,17 @@ const ProductCard = ({ product }) => {
         <View style={styles.imageContainer}>
           <ActivityIndicator size="small" color="#8B4513" />
         </View>
-      ) : (
+      ) : imageUrl ? (
         <Image source={{ uri: imageUrl }} style={styles.image} />
+      ) : (
+        <View style={styles.imageContainer}>
+          <Text style={styles.fallbackText}>Không có ảnh</Text>
+        </View>
       )}
-      <Text style={styles.title}>{product.product_name || product.title}</Text>
+
+      <Text style={styles.title}>{product.product_name || product.title || 'Sản phẩm không tên'}</Text>
       <Text style={styles.price}>{(product.price || 0).toLocaleString()}₫</Text>
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.button} onPress={handleAddToCart}>
           <Text style={styles.buttonText}>Thêm vào giỏ</Text>
@@ -76,11 +87,17 @@ const styles = StyleSheet.create({
     height: 150,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#f2f2f2',
+    borderRadius: 8,
   },
   image: {
     width: '100%',
     height: 150,
     borderRadius: 8,
+  },
+  fallbackText: {
+    fontSize: 14,
+    color: '#999',
   },
   title: {
     fontSize: 18,

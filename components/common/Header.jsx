@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, FlatList, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
 import { useCart } from '../../context/CartProvider';
@@ -22,8 +22,6 @@ const Header = ({
   const [userPhotoURL, setUserPhotoURL] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [showSortModal, setShowSortModal] = useState(false);
-  const [showFilterModal, setShowFilterModal] = useState(false);
 
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
@@ -39,45 +37,25 @@ const Header = ({
   };
 
   const handleOrderHistoryPress = () => {
-    navigation.navigate('OrderHistoryScreen'); // Navigate to Order History Screen
+    navigation.navigate('OrderHistoryScreen');
   };
 
   const handleSearch = (text) => {
     setSearchQuery(text);
     setShowSuggestions(text.trim().length > 0);
-    if (onSearch) {
-      onSearch(text);
-    }
+    if (onSearch) onSearch(text);
   };
 
   const handlePressSearchButton = () => {
     setShowSuggestions(false);
-    if (onSubmitSearch) {
-      onSubmitSearch(searchQuery);
-    }
+    if (onSubmitSearch) onSubmitSearch(searchQuery);
   };
 
   const handleSelectSuggestion = (product) => {
     setShowSuggestions(false);
     setSearchQuery(product.product_name || '');
-    if (onSelectProduct) {
-      onSelectProduct(product);
-    }
+    if (onSelectProduct) onSelectProduct(product);
   };
-
-  const handleSort = (order) => {
-    setShowSortModal(false);
-    if (onSort) {
-      onSort(order);
-    }
-  };
-
-  // const handleFilterCategory = (category) => {
-  //   setShowFilterModal(false);
-  //   if (onFilterCategory) {
-  //     onFilterCategory(category);
-  //   }
-  // }; chua co data
 
   const renderSuggestion = ({ item }) => (
     <TouchableOpacity style={styles.suggestionItem} onPress={() => handleSelectSuggestion(item)}>
@@ -126,10 +104,7 @@ const Header = ({
         <View style={styles.rightContainer}>
           {rightComponent}
 
-          <TouchableOpacity
-            style={styles.orderHistoryButton}
-            onPress={handleOrderHistoryPress}
-          >
+          <TouchableOpacity style={styles.orderHistoryButton} onPress={handleOrderHistoryPress}>
             <Text style={styles.orderHistoryText}>Lịch sử</Text>
           </TouchableOpacity>
 
@@ -137,10 +112,7 @@ const Header = ({
             style={styles.cartIconContainer}
             onPress={() => navigation.navigate('ProductCartScreen')}
           >
-            <Image
-              source={require('../../assets/images/cart.png')}
-              style={styles.cartIcon}
-            />
+            <Image source={require('../../assets/images/cart.png')} style={styles.cartIcon} />
             {cartItemCount > 0 && (
               <View style={styles.cartBadge}>
                 <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
@@ -175,6 +147,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     zIndex: 100,
     position: 'relative',
+    backgroundColor: '#fff',
   },
   header: {
     height: 60,
@@ -183,10 +156,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingHorizontal: 16,
     elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
@@ -206,7 +175,6 @@ const styles = StyleSheet.create({
   rightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
     minWidth: 40,
   },
   avatarContainer: {
@@ -254,6 +222,63 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    marginHorizontal: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+  },
+  searchButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  searchButtonText: {
+    color: '#8B4513',
+    fontWeight: 'bold',
+  },
+  suggestionsContainer: {
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopWidth: 0,
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    zIndex: 999,
+    maxHeight: 250,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  suggestionImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 6,
+    marginRight: 10,
+  },
+  suggestionContent: {
+    flex: 1,
+  },
+  suggestionTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  suggestionPrice: {
+    fontSize: 12,
+    color: 'green',
   },
 });
 

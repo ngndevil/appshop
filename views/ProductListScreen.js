@@ -159,4 +159,10 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 20,
   },
+  image: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  
 });
