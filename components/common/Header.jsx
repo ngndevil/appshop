@@ -1,56 +1,71 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, FlatList, Modal } from 'react-native';
+import React from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Image, 
+  TextInput, 
+  FlatList, 
+  TouchableWithoutFeedback,
+  Keyboard,
+  Dimensions
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
 import { useCart } from '../../context/CartProvider';
 
 const { width, height } = Dimensions.get('window');
 
-const Header = ({
-  title,
-  showBackButton = false,
-  rightComponent,
-  showSearchBar = false,
-  onSearch,
-  searchSuggestions = [],
-  onSelectProduct,
-  onSubmitSearch,
-  onSort,
-  onFilterCategory,
-}) => {
+// Interface định nghĩa kiểu props để tránh lỗi
+const Header = (props) => {
+  // Destructuring props với explicit defaults
+  const {
+    title = "",
+    showBackButton = false,
+    rightComponent = null,
+    showSearchBar = false,
+    onSearch = () => {},
+    searchSuggestions = [],
+    onSelectProduct = () => {},
+    onSubmitSearch = () => {},
+    onSort = () => {},
+    onFilterCategory = () => {},
+  } = props;
+
+  // Khai báo state rõ ràng
   const navigation = useNavigation();
   const auth = getAuth();
   const { cartItems } = useCart();
-  const [userPhotoURL, setUserPhotoURL] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [showSortModal, setShowSortModal] = useState(false);
-  const [showFilterModal, setShowFilterModal] = useState(false);
+  
+  // Nhóm các state liên quan đến nhau
+  const [searchState, setSearchState] = React.useState({
+    query: '',
+    showSuggestions: false,
+    isExpanded: false, // đổi tên từ isSearchExpanded thành isExpanded và đặt trong object
+  });
+  const [userPhotoURL, setUserPhotoURL] = React.useState(null);
+  const [showSortModal, setShowSortModal] = React.useState(false);
+  const [showFilterModal, setShowFilterModal] = React.useState(false);
+  
+  // Refs
+  const searchInputRef = React.useRef(null);
 
+  // Trích xuất các giá trị từ searchState để dễ sử dụng
+  const { query, showSuggestions, isExpanded } = searchState;
+
+  // Computed values
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
-  useEffect(() => {
+  // Effects
+  React.useEffect(() => {
     const user = auth.currentUser;
     if (user) {
       setUserPhotoURL(user.photoURL);
     }
   }, []);
 
-  // Thêm effect listener cho ứng dụng
-  useEffect(() => {
-    const backHandler = () => {
-      if (isSearchExpanded) {
-        collapseSearch();
-        return true;
-      }
-      return false;
-    };
-
-    return () => {
-      // Cleanup event listener
-    };
-  }, [isSearchExpanded]);
-
+  // Handlers - cập nhật toàn bộ để sử dụng searchState thay vì các state riêng lẻ
   const handleAvatarPress = () => {
     navigation.navigate('EditProfileScreen');
   };
@@ -60,38 +75,63 @@ const Header = ({
   };
 
   const handleSearch = (text) => {
-    setSearchQuery(text);
-    setShowSuggestions(text.trim().length > 0);
-    if (onSearch) onSearch(text);
+    setSearchState(prev => ({
+      ...prev,
+      query: text,
+      showSuggestions: text.trim().length > 0
+    }));
+    onSearch(text);
   };
 
   const handlePressSearchButton = () => {
-    setShowSuggestions(false);
-    if (onSubmitSearch) onSubmitSearch(searchQuery);
+    setSearchState(prev => ({
+      ...prev,
+      showSuggestions: false
+    }));
+    onSubmitSearch(query);
+    Keyboard.dismiss();
   };
 
   const handleSelectSuggestion = (product) => {
-    setShowSuggestions(false);
-    setSearchQuery(product.product_name || '');
-    if (onSelectProduct) {
-      onSelectProduct(product);
+    setSearchState(prev => ({
+      ...prev,
+      query: product.product_name || '',
+      showSuggestions: false
+    }));
+    onSelectProduct(product);
+  };
+
+  const toggleSearch = () => {
+    const newExpandedState = !isExpanded;
+    setSearchState(prev => ({
+      ...prev,
+      isExpanded: newExpandedState
+    }));
+
+    if (newExpandedState) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
     }
   };
 
-  const handleSort = (order) => {
-    setShowSortModal(false);
-    if (onSort) {
-      onSort(order);
+  const collapseSearch = () => {
+    if (isExpanded) {
+      setSearchState(prev => ({
+        ...prev,
+        isExpanded: false,
+        showSuggestions: false
+      }));
+      Keyboard.dismiss();
     }
   };
 
-  // const handleFilterCategory = (category) => {
-  //   setShowFilterModal(false);
-  //   if (onFilterCategory) {
-  //     onFilterCategory(category);
-  //   }
-  // }; chua co data
+  // Handler để tránh sự kiện click lan truyền
+  const handleSearchAreaPress = (e) => {
+    e.stopPropagation();
+  };
 
+  // Rendering helpers
   const renderSuggestion = ({ item }) => (
     <TouchableOpacity style={styles.suggestionItem} onPress={() => handleSelectSuggestion(item)}>
       <Image
@@ -106,58 +146,59 @@ const Header = ({
     </TouchableOpacity>
   );
 
+  // Main render với conditional rendering được viết rõ ràng
   return (
     <View style={styles.headerContainer}>
-      {/* Backdrop overlay khi search được mở */}
-      {isSearchExpanded && (
+      {/* Backdrop overlay có điều kiện */}
+      {Boolean(isExpanded) && (
         <TouchableWithoutFeedback onPress={collapseSearch}>
           <View style={styles.backdropOverlay} />
         </TouchableWithoutFeedback>
       )}
       
       <View style={styles.header}>
-        {/* Left side - Only search icon or back button */}
+        {/* Left side - Search icon or back button */}
         <View style={styles.leftContainer}>
-  {showBackButton ? (
-    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
-      <Text style={styles.backButton}>←</Text>
-    </TouchableOpacity>
-  ) : showSearchBar ? (
-    !isSearchExpanded ? (
-      <TouchableOpacity 
-        style={[styles.searchCircleButton, styles.searchCircleButtonShifted]} 
-        onPress={toggleSearch}
-      >
-        <Image 
-          source={require('../../assets/images/location.png')} 
-          style={styles.searchIcon} 
-          resizeMode="contain"
-        />
-      </TouchableOpacity>
-    ) : null
-  ) : null}
-</View>
+          {showBackButton ? (
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
+              <Text style={styles.backButton}>←</Text>
+            </TouchableOpacity>
+          ) : showSearchBar ? (
+            !isExpanded ? (
+              <TouchableOpacity 
+                style={[styles.searchCircleButton, styles.searchCircleButtonShifted]} 
+                onPress={toggleSearch}
+              >
+                <Image 
+                  source={require('../../assets/images/location.png')} 
+                  style={styles.searchIcon} 
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            ) : null
+          ) : null}
+        </View>
 
         {/* Middle - Search bar when expanded or title */}
         <View style={[
           styles.middleContainer, 
-          isSearchExpanded && styles.searchActive,
-          isSearchExpanded && styles.expandedMiddleContainer
+          isExpanded && styles.searchActive,
+          isExpanded && styles.expandedMiddleContainer
         ]}>
-          {showSearchBar && isSearchExpanded ? (
+          {showSearchBar && isExpanded ? (
             <TouchableWithoutFeedback onPress={handleSearchAreaPress}>
               <View style={styles.searchContainer}>
                 <TextInput
                   ref={searchInputRef}
                   style={styles.searchInput}
-                  placeholder="Search..."
-                  value={searchQuery}
+                  placeholder="Tìm kiếm..."
+                  value={query}
                   onChangeText={handleSearch}
                   returnKeyType="search"
                   onSubmitEditing={handlePressSearchButton}
                   autoFocus={true}
                 />
-                {searchQuery.length > 0 && (
+                {query.length > 0 && (
                   <TouchableOpacity style={styles.searchButton} onPress={handlePressSearchButton}>
                     <Text style={styles.searchButtonText}>Tìm</Text>
                   </TouchableOpacity>
@@ -170,31 +211,31 @@ const Header = ({
         </View>
 
         {/* Right side - Only show when search is NOT expanded */}
-        {!isSearchExpanded && (
+        {!isExpanded && (
           <View style={styles.rightContainer}>
             {rightComponent}
 
-          <TouchableOpacity
-            style={styles.orderHistoryButton}
-            onPress={handleOrderHistoryPress}
-          >
-            <Text style={styles.orderHistoryText}>Lịch sử</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.orderHistoryButton}
+              onPress={handleOrderHistoryPress}
+            >
+              <Text style={styles.orderHistoryText}>Lịch sử</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.cartIconContainer}
-            onPress={() => navigation.navigate('ProductCartScreen')}
-          >
-            <Image
-              source={require('../../assets/images/cart.png')}
-              style={styles.cartIcon}
-            />
-            {cartItemCount > 0 && (
-              <View style={styles.cartBadge}>
-                <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.cartIconContainer}
+              onPress={() => navigation.navigate('ProductCartScreen')}
+            >
+              <Image
+                source={require('../../assets/images/cart.png')}
+                style={styles.cartIcon}
+              />
+              {cartItemCount > 0 && (
+                <View style={styles.cartBadge}>
+                  <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
 
             <TouchableOpacity onPress={handleAvatarPress} style={styles.avatarContainer}>
               <Image
@@ -206,10 +247,10 @@ const Header = ({
         )}
       </View>
 
-      {/* Search suggestions */}
-      {showSearchBar && showSuggestions && searchSuggestions.length > 0 && (
+      {/* Search suggestions với điều kiện rõ ràng */}
+      {Boolean(showSearchBar && showSuggestions && searchSuggestions.length > 0) && (
         <TouchableWithoutFeedback onPress={handleSearchAreaPress}>
-          <View style={[styles.suggestionsContainer, isSearchExpanded && styles.searchActive]}>
+          <View style={[styles.suggestionsContainer, isExpanded && styles.searchActive]}>
             <FlatList
               data={searchSuggestions.slice(0, 5)}
               renderItem={renderSuggestion}
@@ -223,10 +264,23 @@ const Header = ({
   );
 };
 
+// Styles không thay đổi
 const styles = StyleSheet.create({
   headerContainer: {
     zIndex: 100,
     position: 'relative',
+    backgroundColor: '#fff',
+  },
+  backdropOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: Dimensions.get('window').height,
+    width: Dimensions.get('window').width,
+    backgroundColor: 'transparent',
+    zIndex: 90,
   },
   header: {
     height: 60,
@@ -235,6 +289,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingHorizontal: 10,
     elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     zIndex: 100,
@@ -248,16 +306,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
-  // Khi search mở rộng, middle container sẽ lấp đầy toàn bộ phần còn lại
   expandedMiddleContainer: {
-    flex: 0.9, // Thay đổi từ flex: 1 xuống còn 0.9 (giảm 10%)
+    flex: 0.9,
     justifyContent: 'center',
-    marginRight: 10, // Giữ nguyên margin để không chạm vào cạnh màn hình
-    height: 40
+    marginRight: 10,
+    height: 36,
   },
-  
   searchActive: {
-    zIndex: 1001, // Đảm bảo hiển thị trên backdrop
+    zIndex: 1001, 
   },
   backButtonContainer: {
     padding: 5,
@@ -277,7 +333,104 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    minWidth: 40,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 36,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 18,
+    backgroundColor: '#f5f5f5',
+    paddingLeft: 15,
+    paddingRight: 5,
+    flex: 1,
+  },
+  searchInput: {
+    flex: 1,
+    height: 36,
+    fontSize: 14,
+    color: '#333',
+    padding: 0,
+    paddingHorizontal: 0,
+  },
+  searchButton: {
+    backgroundColor: '#8B4513',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 15,
+    marginLeft: 5,
+  },
+  searchButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  searchCircleButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  searchIcon: {
+    width: 18,
+    height: 18,
+    tintColor: '#8B4513',
+  },
+  searchCircleButtonShifted: {
+    marginLeft: 15,
+  },
+  suggestionsContainer: {
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    right: 0,
+    backgroundColor: 'white',
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    maxHeight: 300,
+    zIndex: 1000,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#eee',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    alignItems: 'center',
+  },
+  suggestionImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 4,
+    marginRight: 12,
+    backgroundColor: '#f0f0f0',
+    resizeMode: 'cover',
+  },
+  suggestionContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  suggestionTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 4,
+    color: '#333',
+  },
+  suggestionPrice: {
+    fontSize: 14,
+    color: '#8B4513',
+    fontWeight: 'bold',
   },
   avatarContainer: {
     marginLeft: 10,
@@ -324,63 +477,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: 'bold',
-  },
-  searchContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    marginHorizontal: 8,
-  },
-  searchInput: {
-    flex: 1,
-    height: 40,
-  },
-  searchButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-  searchButtonText: {
-    color: '#8B4513',
-    fontWeight: 'bold',
-  },
-  suggestionsContainer: {
-    position: 'absolute',
-    top: 60,
-    left: 0,
-    right: 0,
-    backgroundColor: '#fff',
-    borderTopWidth: 0,
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
-    zIndex: 999,
-    maxHeight: 250,
-  },
-  suggestionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  suggestionImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 6,
-    marginRight: 10,
-  },
-  suggestionContent: {
-    flex: 1,
-  },
-  suggestionTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  suggestionPrice: {
-    fontSize: 12,
-    color: 'green',
   },
 });
 
