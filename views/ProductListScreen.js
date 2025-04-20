@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Alert,Dimensions  } from 'react-native';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../constants/firebaseConfig';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -63,17 +63,24 @@ export default function ProductListScreen() {
 
   const handleSubmitSearch = (searchText) => {
     if (!searchText.trim()) {
-      setFilteredProducts(products);
       return;
     }
+  
     const results = products.filter(
       (product) =>
         product.product_name?.toLowerCase().includes(searchText.toLowerCase()) ||
         product.description?.toLowerCase().includes(searchText.toLowerCase())
     );
-    setFilteredProducts(results);
+  
+    // 👉 Điều hướng sang SearchResultsScreen với params
+    navigation.navigate('SearchResultsScreen', {
+      searchQuery: searchText,
+      products: results,
+    });
+  
     setSearchSuggestions([]);
   };
+  
 
   const handleSort = (order) => {
     const sortedProducts = [...filteredProducts].sort((a, b) => {

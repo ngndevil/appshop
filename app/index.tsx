@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import LoginScreen from '../views/LoginScreen';
 import RegisterScreen from '../views/ResigterScreen';
