@@ -9,6 +9,7 @@ import SearchResultsScreen from '../views/SearchResultsScreen';
 import ProductDetailScreen from '../views/ProductDetailScreen';
 import {CartProvider} from '../context/CartProvider';
 import ProductCartScreen from '../views/ProductCartScreen';
+import OrderHistoryScreen from '../views/OrderHistoryScreen';
 const Stack = createStackNavigator();
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
       <Stack.Screen name="LandingScreen" component={LandingScreen} />
       <Stack.Screen name="LoginScreen" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="OrderHistoryScreen" component={OrderHistoryScreen} />
       <Stack.Screen name="ProductListScreen" component={ProductListScreen} />
       <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} />
       <Stack.Screen name="SearchResultsScreen" component={SearchResultsScreen} />

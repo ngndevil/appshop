@@ -14,7 +14,7 @@ const Header = ({
   onSelectProduct,
   onSubmitSearch,
   onSort,
-  onFilterCategory, // Thêm prop để lọc theo danh mục
+  onFilterCategory,
 }) => {
   const navigation = useNavigation();
   const auth = getAuth();
@@ -23,7 +23,7 @@ const Header = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showSortModal, setShowSortModal] = useState(false);
-  const [showFilterModal, setShowFilterModal] = useState(false); // Trạng thái cho modal lọc danh mục
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
@@ -36,6 +36,10 @@ const Header = ({
 
   const handleAvatarPress = () => {
     navigation.navigate('EditProfileScreen');
+  };
+
+  const handleOrderHistoryPress = () => {
+    navigation.navigate('OrderHistoryScreen'); // Navigate to Order History Screen
   };
 
   const handleSearch = (text) => {
@@ -68,12 +72,12 @@ const Header = ({
     }
   };
 
-  const handleFilterCategory = (category) => {
-    setShowFilterModal(false);
-    if (onFilterCategory) {
-      onFilterCategory(category);
-    }
-  };
+  // const handleFilterCategory = (category) => {
+  //   setShowFilterModal(false);
+  //   if (onFilterCategory) {
+  //     onFilterCategory(category);
+  //   }
+  // }; chua co data
 
   const renderSuggestion = ({ item }) => (
     <TouchableOpacity style={styles.suggestionItem} onPress={() => handleSelectSuggestion(item)}>
@@ -122,16 +126,12 @@ const Header = ({
         <View style={styles.rightContainer}>
           {rightComponent}
 
-          {showSearchBar && (
-            <>
-              <TouchableOpacity onPress={() => setShowSortModal(true)} style={styles.filterButton}>
-                <Text style={styles.filterButtonText}>Sắp xếp</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setShowFilterModal(true)} style={styles.filterButton}>
-                <Text style={styles.filterButtonText}>Lọc</Text>
-              </TouchableOpacity>
-            </>
-          )}
+          <TouchableOpacity
+            style={styles.orderHistoryButton}
+            onPress={handleOrderHistoryPress}
+          >
+            <Text style={styles.orderHistoryText}>Lịch sử</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.cartIconContainer}
@@ -167,56 +167,6 @@ const Header = ({
           />
         </View>
       )}
-
-      <Modal
-        visible={showSortModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowSortModal(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowSortModal(false)}
-        >
-          <View style={styles.modalContent}>
-            <TouchableOpacity style={styles.modalOption} onPress={() => handleSort('asc')}>
-              <Text style={styles.modalOptionText}>Giá: Tăng dần</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.modalOption} onPress={() => handleSort('desc')}>
-              <Text style={styles.modalOptionText}>Giá: Giảm dần</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      <Modal
-        visible={showFilterModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowFilterModal(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowFilterModal(false)}
-        >
-          <View style={styles.modalContent}>
-            <TouchableOpacity style={styles.modalOption} onPress={() => handleFilterCategory('')}>
-              <Text style={styles.modalOptionText}>Tất cả</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.modalOption} onPress={() => handleFilterCategory('Áo')}>
-              <Text style={styles.modalOptionText}>Áo</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.modalOption} onPress={() => handleFilterCategory('Quần')}>
-              <Text style={styles.modalOptionText}>Quần</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.modalOption} onPress={() => handleFilterCategory('Giày')}>
-              <Text style={styles.modalOptionText}>Giày</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </View>
   );
 };
@@ -293,105 +243,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
-  filterButton: {
+  orderHistoryButton: {
     marginLeft: 10,
-    backgroundColor: '#ddd',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  filterButtonText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  searchContainer: {
-    flex: 1,
-    marginHorizontal: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  searchInput: {
-    backgroundColor: '#f0f0f0',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    fontSize: 16,
-    flex: 1,
-  },
-  searchButton: {
-    marginLeft: 8,
     backgroundColor: '#8B4513',
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  searchButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  suggestionsContainer: {
-    position: 'absolute',
-    top: 60,
-    left: 0,
-    right: 0,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    maxHeight: 300,
-    marginHorizontal: 16,
-    marginTop: 4,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    zIndex: 1000,
-  },
-  suggestionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  suggestionImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 4,
-  },
-  suggestionContent: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  suggestionTitle: {
+  orderHistoryText: {
+    color: '#fff',
     fontSize: 14,
-    fontWeight: '500',
-  },
-  suggestionPrice: {
-    fontSize: 13,
-    color: 'green',
-    marginTop: 2,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 16,
-    width: 200,
-  },
-  modalOption: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  modalOptionText: {
-    fontSize: 16,
-    textAlign: 'center',
+    fontWeight: 'bold',
   },
 });
 

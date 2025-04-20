@@ -3,17 +3,24 @@ import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet } from 'react
 import Header from '../components/common/Header';
 import { useCart } from '../context/CartProvider';
 import { handleCheckout } from './OrderService';
+
 const ProductCartScreen = () => {
   const { cartItems, increment, decrement, removeItem, setCartItems } = useCart();
 
   const totalCartItems = cartItems.reduce((total, item) => total + item.quantity, 0);
   const totalPrice = cartItems.reduce((total, item) => total + (item.price || 0) * item.quantity, 0);
-  console.log('Current directory:', __dirname);
 
   const onCheckout = async () => {
-    const success = await handleCheckout(cartItems);
-    if (success) {
-      setCartItems([]); // Xóa giỏ hàng nếu thanh toán thành công
+    try {
+      const success = await handleCheckout(cartItems);
+      if (success) {
+        setCartItems([]); // Clear cart if checkout is successful
+      } else {
+        alert('Checkout failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('An error occurred during checkout. Please try again.');
     }
   };
 
@@ -49,7 +56,7 @@ const ProductCartScreen = () => {
           <FlatList
             data={cartItems}
             renderItem={renderItem}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.id || Math.random().toString()} // Fallback for missing id
             contentContainerStyle={styles.listContainer}
           />
           <View style={styles.footer}>
