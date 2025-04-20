@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Image, StyleSheet, ActivityIndicator, Button, Alert } from 'react-native';
+import { View, Text, FlatList, Image, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/constants/firebaseConfig';
-import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
+import Header from '../components/common/Header';
 
 export default function ProductListScreen() {
   const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigation = useNavigation();
@@ -21,7 +24,7 @@ export default function ProductListScreen() {
       } else {
         console.log('User not authenticated, redirecting to LoginScreen');
         setIsAuthenticated(false);
-        setLoading(false); 
+        setLoading(false);
         navigation.replace('LoginScreen');
       }
     });
@@ -30,45 +33,72 @@ export default function ProductListScreen() {
   }, [navigation]);
 
   const fetchData = async () => {
-      try {
+    try {
       const querySnapshot = await getDocs(collection(db, 'product'));
       const items = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
       }));
-      console.log('Fetched products:', items); // Debug
+      console.log('Fetched products:', items);
       setProducts(items);
-      } catch (error) {
-        console.error('Error fetching products:', error);
+      setFilteredProducts(items); // Initialize filtered products
+    } catch (error) {
+      console.error('Error fetching products:', error);
       Alert.alert('Error', 'Failed to fetch products. Please try again later.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    signOut(auth)
-      .then(() => {
-        console.log('User logged out successfully'); // Debug
-        navigation.replace('LoginScreen');
-      })
-      .catch((error) => {
-        console.error('Logout failed:', error);
-        Alert.alert('Error', 'Failed to log out. Please try again.');
-      });
+  // Search handler to show suggestions as you type
+  const handleSearch = (text) => {
+    if (!text.trim()) {
+      setSearchSuggestions([]);
+      return;
+    }
+    
+    // Find products matching the search text
+    const suggestions = products.filter(product => 
+      (product.product_name && product.product_name.toLowerCase().includes(text.toLowerCase())) || 
+      (product.description && product.description.toLowerCase().includes(text.toLowerCase()))
+    );
+    
+    // Limit suggestions to top 5 matches
+    setSearchSuggestions(suggestions.slice(0, 5));
+  };
+
+  // When user presses "Search" button or Enter key
+  const handleSubmitSearch = (searchText) => {
+    if (!searchText.trim()) {
+      return;
+    }
+    
+    // Navigate to search results screen with the search query
+    navigation.navigate('SearchResultsScreen', { 
+      searchQuery: searchText,
+      products: products.filter(product => 
+        (product.product_name && product.product_name.toLowerCase().includes(searchText.toLowerCase())) || 
+        (product.description && product.description.toLowerCase().includes(searchText.toLowerCase()))
+      )
+    });
+  };
+
+  // When user selects a suggestion
+  const handleSelectProduct = (product) => {
+    // Navigate to product detail screen
+    navigation.navigate('ProductDetailScreen', { product });
   };
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
       <Image
-        source={{ uri: item.image_url || 'https://via.placeholder.com/150' }} // Fallback image
+        source={{ uri: item.image_url || 'https://via.placeholder.com/150' }}
         style={styles.image}
       />
       <Text style={styles.name}>{item.product_name || 'Unnamed Product'}</Text>
       <Text style={styles.price}>{(item.price || 0).toLocaleString()}₫</Text>
-      <Text style={styles.stock}>{'Số lượng: '+item.stock || 'out stock'}</Text>
+      <Text style={styles.stock}>{'Số lượng: ' + item.stock || 'out stock'}</Text>
       <Text style={styles.description}>{item.description || 'No description'}</Text>
-      
     </View>
   );
 
@@ -78,35 +108,44 @@ export default function ProductListScreen() {
         <ActivityIndicator size="large" color="#0000ff" />
         <Text style={styles.loadingText}>Loading products...</Text>
       </View>
-  );
+    );
   }
 
   if (!isAuthenticated) {
-    return null; // Tránh hiển thị gì nếu chưa xác thực
+    return null;
   }
 
   return (
     <View style={styles.container}>
+      <Header 
+        showSearchBar={true} 
+        onSearch={handleSearch}
+        searchSuggestions={searchSuggestions}
+        onSelectProduct={handleSelectProduct}
+        onSubmitSearch={handleSubmitSearch}
+      />
+      
       <FlatList
-        data={products}
+        data={filteredProducts}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
-        ListEmptyComponent={<Text style={styles.emptyText}>No products available</Text>}
+        ListEmptyComponent={<Text style={styles.emptyText}>Không tìm thấy sản phẩm</Text>}
       />
-      <View style={styles.menuBar}>
-        <Button title="Logout" onPress={handleLogout} color="#ff4444" />
-      </View>
     </View>
   );
 }
 
+
 const styles = StyleSheet.create({
+  // ...existing styles remain the same
   container: {
     flex: 1,
+    backgroundColor: '#f8f8f8',
   },
   listContainer: {
     padding: 16,
+    paddingBottom: 20,
   },
   card: {
     backgroundColor: '#fff',
@@ -154,16 +193,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginTop: 20,
-  },
-  menuBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 10,
-    backgroundColor: '#f8f8f8',
-    borderTopWidth: 1,
-    borderTopColor: '#ccc',
-    alignItems: 'center',
-  },
+  }
 });
