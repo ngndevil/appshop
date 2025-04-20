@@ -145,22 +145,25 @@ const Header = ({
       <View style={styles.header}>
         {/* Left side - Only search icon or back button */}
         <View style={styles.leftContainer}>
-          {showBackButton ? (
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
-              <Text style={styles.backButton}>←</Text>
-            </TouchableOpacity>
-          ) : showSearchBar ? (
-            !isSearchExpanded ? (
-              <TouchableOpacity style={styles.searchCircleButton} onPress={toggleSearch}>
-                <Image 
-                  source={require('../../assets/images/location.png')} 
-                  style={styles.searchIcon} 
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-            ) : null
-          ) : null}
-        </View>
+  {showBackButton ? (
+    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
+      <Text style={styles.backButton}>←</Text>
+    </TouchableOpacity>
+  ) : showSearchBar ? (
+    !isSearchExpanded ? (
+      <TouchableOpacity 
+        style={[styles.searchCircleButton, styles.searchCircleButtonShifted]} 
+        onPress={toggleSearch}
+      >
+        <Image 
+          source={require('../../assets/images/location.png')} 
+          style={styles.searchIcon} 
+          resizeMode="contain"
+        />
+      </TouchableOpacity>
+    ) : null
+  ) : null}
+</View>
 
         {/* Middle - Search bar when expanded or title */}
         <View style={[
@@ -366,6 +369,10 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     tintColor: '#8B4513',
+  },
+
+  searchCircleButtonShifted: {
+    marginLeft: 10, // Di chuyển sang phải 10px
   },
   
   // Suggestions styles
