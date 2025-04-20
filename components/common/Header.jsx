@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, FlatList, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
 import { useCart } from '../../context/CartProvider';
+
+const { width, height } = Dimensions.get('window');
 
 const Header = ({
   title,
@@ -22,6 +24,8 @@ const Header = ({
   const [userPhotoURL, setUserPhotoURL] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showSortModal, setShowSortModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
@@ -31,6 +35,21 @@ const Header = ({
       setUserPhotoURL(user.photoURL);
     }
   }, []);
+
+  // Thêm effect listener cho ứng dụng
+  useEffect(() => {
+    const backHandler = () => {
+      if (isSearchExpanded) {
+        collapseSearch();
+        return true;
+      }
+      return false;
+    };
+
+    return () => {
+      // Cleanup event listener
+    };
+  }, [isSearchExpanded]);
 
   const handleAvatarPress = () => {
     navigation.navigate('EditProfileScreen');
@@ -54,14 +73,31 @@ const Header = ({
   const handleSelectSuggestion = (product) => {
     setShowSuggestions(false);
     setSearchQuery(product.product_name || '');
-    if (onSelectProduct) onSelectProduct(product);
+    if (onSelectProduct) {
+      onSelectProduct(product);
+    }
   };
+
+  const handleSort = (order) => {
+    setShowSortModal(false);
+    if (onSort) {
+      onSort(order);
+    }
+  };
+
+  // const handleFilterCategory = (category) => {
+  //   setShowFilterModal(false);
+  //   if (onFilterCategory) {
+  //     onFilterCategory(category);
+  //   }
+  // }; chua co data
 
   const renderSuggestion = ({ item }) => (
     <TouchableOpacity style={styles.suggestionItem} onPress={() => handleSelectSuggestion(item)}>
       <Image
         source={{ uri: item.image_url || 'https://via.placeholder.com/50' }}
         style={styles.suggestionImage}
+        defaultSource={require('../../assets/images/default-avatar.jpg')}
       />
       <View style={styles.suggestionContent}>
         <Text style={styles.suggestionTitle} numberOfLines={1}>{item.product_name}</Text>
@@ -72,39 +108,76 @@ const Header = ({
 
   return (
     <View style={styles.headerContainer}>
+      {/* Backdrop overlay khi search được mở */}
+      {isSearchExpanded && (
+        <TouchableWithoutFeedback onPress={collapseSearch}>
+          <View style={styles.backdropOverlay} />
+        </TouchableWithoutFeedback>
+      )}
+      
       <View style={styles.header}>
+        {/* Left side - Only search icon or back button */}
         <View style={styles.leftContainer}>
-          {showBackButton && (
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Text style={styles.backButton}>←</Text>
-            </TouchableOpacity>
-          )}
+  {showBackButton ? (
+    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
+      <Text style={styles.backButton}>←</Text>
+    </TouchableOpacity>
+  ) : showSearchBar ? (
+    !isSearchExpanded ? (
+      <TouchableOpacity 
+        style={[styles.searchCircleButton, styles.searchCircleButtonShifted]} 
+        onPress={toggleSearch}
+      >
+        <Image 
+          source={require('../../assets/images/location.png')} 
+          style={styles.searchIcon} 
+          resizeMode="contain"
+        />
+      </TouchableOpacity>
+    ) : null
+  ) : null}
+</View>
+
+        {/* Middle - Search bar when expanded or title */}
+        <View style={[
+          styles.middleContainer, 
+          isSearchExpanded && styles.searchActive,
+          isSearchExpanded && styles.expandedMiddleContainer
+        ]}>
+          {showSearchBar && isSearchExpanded ? (
+            <TouchableWithoutFeedback onPress={handleSearchAreaPress}>
+              <View style={styles.searchContainer}>
+                <TextInput
+                  ref={searchInputRef}
+                  style={styles.searchInput}
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChangeText={handleSearch}
+                  returnKeyType="search"
+                  onSubmitEditing={handlePressSearchButton}
+                  autoFocus={true}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity style={styles.searchButton} onPress={handlePressSearchButton}>
+                    <Text style={styles.searchButtonText}>Tìm</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </TouchableWithoutFeedback>
+          ) : !showSearchBar ? (
+            <Text style={styles.title}>{title}</Text>
+          ) : null}
         </View>
 
-        {showSearchBar ? (
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Tìm kiếm sản phẩm..."
-              value={searchQuery}
-              onChangeText={handleSearch}
-              returnKeyType="search"
-              onSubmitEditing={handlePressSearchButton}
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity style={styles.searchButton} onPress={handlePressSearchButton}>
-                <Text style={styles.searchButtonText}>Tìm</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ) : (
-          <Text style={styles.title}>{title}</Text>
-        )}
+        {/* Right side - Only show when search is NOT expanded */}
+        {!isSearchExpanded && (
+          <View style={styles.rightContainer}>
+            {rightComponent}
 
-        <View style={styles.rightContainer}>
-          {rightComponent}
-
-          <TouchableOpacity style={styles.orderHistoryButton} onPress={handleOrderHistoryPress}>
+          <TouchableOpacity
+            style={styles.orderHistoryButton}
+            onPress={handleOrderHistoryPress}
+          >
             <Text style={styles.orderHistoryText}>Lịch sử</Text>
           </TouchableOpacity>
 
@@ -112,7 +185,10 @@ const Header = ({
             style={styles.cartIconContainer}
             onPress={() => navigation.navigate('ProductCartScreen')}
           >
-            <Image source={require('../../assets/images/cart.png')} style={styles.cartIcon} />
+            <Image
+              source={require('../../assets/images/cart.png')}
+              style={styles.cartIcon}
+            />
             {cartItemCount > 0 && (
               <View style={styles.cartBadge}>
                 <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
@@ -120,24 +196,28 @@ const Header = ({
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={handleAvatarPress} style={styles.avatarContainer}>
-            <Image
-              source={userPhotoURL ? { uri: userPhotoURL } : require('../../assets/images/default-avatar.jpg')}
-              style={styles.avatar}
-            />
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity onPress={handleAvatarPress} style={styles.avatarContainer}>
+              <Image
+                source={userPhotoURL ? { uri: userPhotoURL } : require('../../assets/images/default-avatar.jpg')}
+                style={styles.avatar}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
+      {/* Search suggestions */}
       {showSearchBar && showSuggestions && searchSuggestions.length > 0 && (
-        <View style={styles.suggestionsContainer}>
-          <FlatList
-            data={searchSuggestions.slice(0, 5)}
-            renderItem={renderSuggestion}
-            keyExtractor={(item) => item.id}
-            keyboardShouldPersistTaps="always"
-          />
-        </View>
+        <TouchableWithoutFeedback onPress={handleSearchAreaPress}>
+          <View style={[styles.suggestionsContainer, isSearchExpanded && styles.searchActive]}>
+            <FlatList
+              data={searchSuggestions.slice(0, 5)}
+              renderItem={renderSuggestion}
+              keyExtractor={(item) => item.id.toString()}
+              keyboardShouldPersistTaps="always"
+            />
+          </View>
+        </TouchableWithoutFeedback>
       )}
     </View>
   );
@@ -147,34 +227,56 @@ const styles = StyleSheet.create({
   headerContainer: {
     zIndex: 100,
     position: 'relative',
-    backgroundColor: '#fff',
   },
   header: {
     height: 60,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    paddingHorizontal: 16,
+    paddingHorizontal: 10,
     elevation: 4,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    zIndex: 100,
   },
   leftContainer: {
     width: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
-  title: {
+  middleContainer: {
     flex: 1,
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    justifyContent: 'center',
+  },
+  // Khi search mở rộng, middle container sẽ lấp đầy toàn bộ phần còn lại
+  expandedMiddleContainer: {
+    flex: 0.9, // Thay đổi từ flex: 1 xuống còn 0.9 (giảm 10%)
+    justifyContent: 'center',
+    marginRight: 10, // Giữ nguyên margin để không chạm vào cạnh màn hình
+    height: 40
+  },
+  
+  searchActive: {
+    zIndex: 1001, // Đảm bảo hiển thị trên backdrop
+  },
+  backButtonContainer: {
+    padding: 5,
   },
   backButton: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: '#8B4513',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#333',
   },
   rightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     minWidth: 40,
   },
   avatarContainer: {
