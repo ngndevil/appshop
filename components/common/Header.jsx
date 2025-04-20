@@ -2,44 +2,57 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, FlatList, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
+import { useCart } from '../../context/CartProvider';
 
-const Header = ({ title, showBackButton = false, rightComponent, showSearchBar = false, onSearch, searchSuggestions = [], onSelectProduct, onSubmitSearch }) => {
+const Header = ({
+  title,
+  showBackButton = false,
+  rightComponent,
+  showSearchBar = false,
+  onSearch,
+  searchSuggestions = [],
+  onSelectProduct,
+  onSubmitSearch,
+  onSort,
+  onFilterCategory, // Thêm prop để lọc theo danh mục
+}) => {
   const navigation = useNavigation();
   const auth = getAuth();
+  const { cartItems } = useCart();
   const [userPhotoURL, setUserPhotoURL] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
-  
+  const [showSortModal, setShowSortModal] = useState(false);
+  const [showFilterModal, setShowFilterModal] = useState(false); // Trạng thái cho modal lọc danh mục
+
+  const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+
   useEffect(() => {
-    // Get current user's photo URL
     const user = auth.currentUser;
     if (user) {
       setUserPhotoURL(user.photoURL);
     }
   }, []);
-  
+
   const handleAvatarPress = () => {
     navigation.navigate('EditProfileScreen');
   };
-  
+
   const handleSearch = (text) => {
     setSearchQuery(text);
-    
-    // Show suggestions only if there's text
     setShowSuggestions(text.trim().length > 0);
-    
     if (onSearch) {
       onSearch(text);
     }
   };
-  
+
   const handlePressSearchButton = () => {
     setShowSuggestions(false);
     if (onSubmitSearch) {
       onSubmitSearch(searchQuery);
     }
   };
-  
+
   const handleSelectSuggestion = (product) => {
     setShowSuggestions(false);
     setSearchQuery(product.product_name || '');
@@ -47,15 +60,26 @@ const Header = ({ title, showBackButton = false, rightComponent, showSearchBar =
       onSelectProduct(product);
     }
   };
-  
+
+  const handleSort = (order) => {
+    setShowSortModal(false);
+    if (onSort) {
+      onSort(order);
+    }
+  };
+
+  const handleFilterCategory = (category) => {
+    setShowFilterModal(false);
+    if (onFilterCategory) {
+      onFilterCategory(category);
+    }
+  };
+
   const renderSuggestion = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.suggestionItem} 
-      onPress={() => handleSelectSuggestion(item)}
-    >
-      <Image 
-        source={{ uri: item.image_url || 'https://via.placeholder.com/50' }} 
-        style={styles.suggestionImage} 
+    <TouchableOpacity style={styles.suggestionItem} onPress={() => handleSelectSuggestion(item)}>
+      <Image
+        source={{ uri: item.image_url || 'https://via.placeholder.com/50' }}
+        style={styles.suggestionImage}
       />
       <View style={styles.suggestionContent}>
         <Text style={styles.suggestionTitle} numberOfLines={1}>{item.product_name}</Text>
@@ -63,7 +87,7 @@ const Header = ({ title, showBackButton = false, rightComponent, showSearchBar =
       </View>
     </TouchableOpacity>
   );
-  
+
   return (
     <View style={styles.headerContainer}>
       <View style={styles.header}>
@@ -74,7 +98,7 @@ const Header = ({ title, showBackButton = false, rightComponent, showSearchBar =
             </TouchableOpacity>
           )}
         </View>
-        
+
         {showSearchBar ? (
           <View style={styles.searchContainer}>
             <TextInput
@@ -94,37 +118,112 @@ const Header = ({ title, showBackButton = false, rightComponent, showSearchBar =
         ) : (
           <Text style={styles.title}>{title}</Text>
         )}
-        
+
         <View style={styles.rightContainer}>
           {rightComponent}
-          
+
+          {showSearchBar && (
+            <>
+              <TouchableOpacity onPress={() => setShowSortModal(true)} style={styles.filterButton}>
+                <Text style={styles.filterButtonText}>Sắp xếp</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowFilterModal(true)} style={styles.filterButton}>
+                <Text style={styles.filterButtonText}>Lọc</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          <TouchableOpacity
+            style={styles.cartIconContainer}
+            onPress={() => navigation.navigate('ProductCartScreen')}
+          >
+            <Image
+              source={require('../../assets/images/cart.png')}
+              style={styles.cartIcon}
+            />
+            {cartItemCount > 0 && (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
           <TouchableOpacity onPress={handleAvatarPress} style={styles.avatarContainer}>
-            <Image 
+            <Image
               source={userPhotoURL ? { uri: userPhotoURL } : require('../../assets/images/default-avatar.jpg')}
-              style={styles.avatar} 
+              style={styles.avatar}
             />
           </TouchableOpacity>
         </View>
       </View>
-      
-      {/* Suggestions Popup */}
+
       {showSearchBar && showSuggestions && searchSuggestions.length > 0 && (
         <View style={styles.suggestionsContainer}>
           <FlatList
-            data={searchSuggestions.slice(0, 5)} // Limit to 5 suggestions
+            data={searchSuggestions.slice(0, 5)}
             renderItem={renderSuggestion}
             keyExtractor={(item) => item.id}
             keyboardShouldPersistTaps="always"
           />
         </View>
       )}
+
+      <Modal
+        visible={showSortModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowSortModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowSortModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <TouchableOpacity style={styles.modalOption} onPress={() => handleSort('asc')}>
+              <Text style={styles.modalOptionText}>Giá: Tăng dần</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalOption} onPress={() => handleSort('desc')}>
+              <Text style={styles.modalOptionText}>Giá: Giảm dần</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal
+        visible={showFilterModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowFilterModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowFilterModal(false)}
+        >
+          <View style={styles.modalContent}>
+            <TouchableOpacity style={styles.modalOption} onPress={() => handleFilterCategory('')}>
+              <Text style={styles.modalOptionText}>Tất cả</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalOption} onPress={() => handleFilterCategory('Áo')}>
+              <Text style={styles.modalOptionText}>Áo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalOption} onPress={() => handleFilterCategory('Quần')}>
+              <Text style={styles.modalOptionText}>Quần</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalOption} onPress={() => handleFilterCategory('Giày')}>
+              <Text style={styles.modalOptionText}>Giày</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   headerContainer: {
-    zIndex: 100, // Ensure suggestions appear on top
+    zIndex: 100,
     position: 'relative',
   },
   header: {
@@ -169,6 +268,42 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: '#8B4513',
+  },
+  cartIconContainer: {
+    marginLeft: 10,
+    position: 'relative',
+  },
+  cartIcon: {
+    width: 24,
+    height: 24,
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#8B4513',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cartBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  filterButton: {
+    marginLeft: 10,
+    backgroundColor: '#ddd',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
   },
   searchContainer: {
     flex: 1,
@@ -236,7 +371,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: 'green',
     marginTop: 2,
-  }
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 16,
+    width: 200,
+  },
+  modalOption: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalOptionText: {
+    fontSize: 16,
+    textAlign: 'center',
+  },
 });
 
 export default Header;

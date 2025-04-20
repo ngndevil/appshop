@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Image, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/constants/firebaseConfig';
+import { db } from '../constants/firebaseConfig';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../components/common/Header';
+import ProductCard from '../components/products/ProductCard';
 
 export default function ProductListScreen() {
   const [products, setProducts] = useState([]);
@@ -18,11 +19,9 @@ export default function ProductListScreen() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        console.log('User authenticated:', user.email);
         setIsAuthenticated(true);
         fetchData();
       } else {
-        console.log('User not authenticated, redirecting to LoginScreen');
         setIsAuthenticated(false);
         setLoading(false);
         navigation.replace('LoginScreen');
@@ -35,96 +34,95 @@ export default function ProductListScreen() {
   const fetchData = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, 'product'));
-      const items = querySnapshot.docs.map(doc => ({
+      const items = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
-      console.log('Fetched products:', items);
       setProducts(items);
-      setFilteredProducts(items); // Initialize filtered products
+      setFilteredProducts(items);
     } catch (error) {
-      console.error('Error fetching products:', error);
-      Alert.alert('Error', 'Failed to fetch products. Please try again later.');
+      Alert.alert('Lỗi', 'Không thể tải sản phẩm.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Search handler to show suggestions as you type
   const handleSearch = (text) => {
     if (!text.trim()) {
       setSearchSuggestions([]);
+      setFilteredProducts(products);
       return;
     }
-    
-    // Find products matching the search text
-    const suggestions = products.filter(product => 
-      (product.product_name && product.product_name.toLowerCase().includes(text.toLowerCase())) || 
-      (product.description && product.description.toLowerCase().includes(text.toLowerCase()))
+    const suggestions = products.filter(
+      (product) =>
+        product.product_name?.toLowerCase().includes(text.toLowerCase()) ||
+        product.description?.toLowerCase().includes(text.toLowerCase())
     );
-    
-    // Limit suggestions to top 5 matches
     setSearchSuggestions(suggestions.slice(0, 5));
   };
 
-  // When user presses "Search" button or Enter key
   const handleSubmitSearch = (searchText) => {
     if (!searchText.trim()) {
+      setFilteredProducts(products);
       return;
     }
-    
-    // Navigate to search results screen with the search query
-    navigation.navigate('SearchResultsScreen', { 
-      searchQuery: searchText,
-      products: products.filter(product => 
-        (product.product_name && product.product_name.toLowerCase().includes(searchText.toLowerCase())) || 
-        (product.description && product.description.toLowerCase().includes(searchText.toLowerCase()))
-      )
-    });
+    const results = products.filter(
+      (product) =>
+        product.product_name?.toLowerCase().includes(searchText.toLowerCase()) ||
+        product.description?.toLowerCase().includes(searchText.toLowerCase())
+    );
+    setFilteredProducts(results);
+    setSearchSuggestions([]);
   };
 
-  // When user selects a suggestion
+  const handleSort = (order) => {
+    const sortedProducts = [...filteredProducts].sort((a, b) => {
+      if (order === 'asc') {
+        return (a.price || 0) - (b.price || 0);
+      } else {
+        return (b.price || 0) - (a.price || 0);
+      }
+    });
+    setFilteredProducts(sortedProducts);
+  };
+
+  const handleFilterCategory = (category) => {
+    if (!category) {
+      setFilteredProducts(products);
+      return;
+    }
+    const filtered = products.filter((product) => product.category === category);
+    setFilteredProducts(filtered);
+  };
+
   const handleSelectProduct = (product) => {
-    // Navigate to product detail screen
     navigation.navigate('ProductDetailScreen', { product });
   };
 
-  const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      <Image
-        source={{ uri: item.image_url || 'https://via.placeholder.com/150' }}
-        style={styles.image}
-      />
-      <Text style={styles.name}>{item.product_name || 'Unnamed Product'}</Text>
-      <Text style={styles.price}>{(item.price || 0).toLocaleString()}₫</Text>
-      <Text style={styles.stock}>{'Số lượng: ' + item.stock || 'out stock'}</Text>
-      <Text style={styles.description}>{item.description || 'No description'}</Text>
-    </View>
-  );
+  const renderItem = ({ item }) => <ProductCard product={item} />;
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#0000ff" />
-        <Text style={styles.loadingText}>Loading products...</Text>
+        <Text style={styles.loadingText}>Đang tải sản phẩm...</Text>
       </View>
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  if (!isAuthenticated) return null;
 
   return (
     <View style={styles.container}>
-      <Header 
-        showSearchBar={true} 
+      <Header
+        showSearchBar={true}
         onSearch={handleSearch}
         searchSuggestions={searchSuggestions}
         onSelectProduct={handleSelectProduct}
         onSubmitSearch={handleSubmitSearch}
+        onSort={handleSort}
+        onFilterCategory={handleFilterCategory} // Truyền hàm lọc danh mục
       />
-      
       <FlatList
         data={filteredProducts}
         renderItem={renderItem}
@@ -136,9 +134,7 @@ export default function ProductListScreen() {
   );
 }
 
-
 const styles = StyleSheet.create({
-  // ...existing styles remain the same
   container: {
     flex: 1,
     backgroundColor: '#f8f8f8',
@@ -146,37 +142,6 @@ const styles = StyleSheet.create({
   listContainer: {
     padding: 16,
     paddingBottom: 20,
-  },
-  card: {
-    backgroundColor: '#fff',
-    padding: 16,
-    marginBottom: 12,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  image: {
-    width: '100%',
-    height: 150,
-    borderRadius: 8,
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 8,
-  },
-  price: {
-    color: 'green',
-    marginTop: 4,
-  },
-  stock: {
-    color: 'gray',
-    marginTop: 4,
-  },
-  description: {
-    marginTop: 4,
   },
   loadingContainer: {
     flex: 1,
@@ -193,5 +158,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginTop: 20,
-  }
+  },
 });
