@@ -6,7 +6,7 @@ const CartContext = createContext();
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
 
-  // Tải giỏ hàng từ AsyncStorage khi ứng dụng khởi động
+  // Load cart from AsyncStorage when the app starts
   useEffect(() => {
     const loadCart = async () => {
       try {
@@ -21,7 +21,7 @@ export const CartProvider = ({ children }) => {
     loadCart();
   }, []);
 
-  // Lưu giỏ hàng vào AsyncStorage mỗi khi cartItems thay đổi
+  // Save cart to AsyncStorage whenever cartItems changes
   useEffect(() => {
     const saveCart = async () => {
       try {
@@ -33,6 +33,22 @@ export const CartProvider = ({ children }) => {
     saveCart();
   }, [cartItems]);
 
+  const addToCart = (item) => {
+    setCartItems((prevItems) => {
+      const existingItem = prevItems.find((i) => i.id === item.id);
+      if (existingItem) {
+        // If the item already exists, update its quantity
+        return prevItems.map((i) =>
+          i.id === item.id
+            ? { ...i, quantity: i.quantity + item.quantity }
+            : i
+        );
+      } else {
+        // If the item doesn't exist, add it to the cart
+        return [...prevItems, { ...item, quantity: item.quantity }];
+      }
+    });
+  };
   const increment = (id) => {
     setCartItems((prevItems) =>
       prevItems.map((item) =>
@@ -57,7 +73,14 @@ export const CartProvider = ({ children }) => {
 
   return (
     <CartContext.Provider
-      value={{ cartItems, setCartItems, increment, decrement, removeItem }}
+      value={{
+        cartItems,
+        setCartItems,
+        addToCart, // Ensure this is included
+        increment,
+        decrement,
+        removeItem,
+      }}
     >
       {children}
     </CartContext.Provider>

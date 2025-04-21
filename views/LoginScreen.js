@@ -9,6 +9,7 @@ const LoginScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
 
+  
   const handleLogin = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email)) {
@@ -19,7 +20,7 @@ const LoginScreen = ({ navigation }) => {
       Alert.alert('Error', 'Please enter a password.');
       return;
     }
-
+  
     signInWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
         const user = userCredential.user;
@@ -30,8 +31,10 @@ const LoginScreen = ({ navigation }) => {
       .catch((error) => {
         console.log('Login error:', error);
         let errorMessage = 'An error occurred. Please try again.';
-        if (error.code === 'auth/invalid-credential') {
-          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        if (error.code === 'auth/wrong-password') {
+          errorMessage = 'Incorrect password. Please try again.';
+        } else if (error.code === 'auth/user-not-found') {
+          errorMessage = 'No account found with this email. Please check your email or sign up.';
         } else if (error.code === 'auth/too-many-requests') {
           errorMessage = 'Too many failed attempts. Please try again later.';
         } else if (error.code === 'auth/network-request-failed') {
@@ -39,9 +42,7 @@ const LoginScreen = ({ navigation }) => {
         } else {
           errorMessage = error.message;
         }
-        Alert.alert('Login Failed', errorMessage, [
-          { text: 'OK', onPress: () => navigation.navigate('LoginFailScreen') },
-        ]);
+        Alert.alert('Login Failed', errorMessage);
       });
   };
 

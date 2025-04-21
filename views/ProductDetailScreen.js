@@ -1,344 +1,272 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import {
+  View, Text, Image, ScrollView, TouchableOpacity,
+  Alert, StyleSheet, Pressable
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useCart } from '../context/CartProvider';
 import Header from '../components/common/Header';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 export default function ProductDetailScreen({ route }) {
   const { product } = route.params || {};
   const navigation = useNavigation();
   const [quantity, setQuantity] = useState(1);
+  const { addToCart } = useCart();
 
   if (!product) {
     return (
       <View style={styles.container}>
         <Header title="Chi tiết sản phẩm" showBackButton={true} />
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Không tìm thấy thông tin sản phẩm</Text>
-          <TouchableOpacity 
-            style={styles.backButton} 
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.backButtonText}>Quay lại</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.errorText}>Không tìm thấy sản phẩm</Text>
       </View>
     );
   }
 
   const handleAddToCart = () => {
-    // Implement your add to cart logic here
+    if (!product || !product.id) {
+      Alert.alert('Lỗi', 'Không thể thêm sản phẩm vào giỏ hàng. Vui lòng thử lại.');
+      return;
+    }
+
+    const cartItem = {
+      ...product,
+      quantity,
+    };
+
+    console.log('Adding to cart:', cartItem);
+    addToCart(cartItem);
     Alert.alert('Thành công', `Đã thêm ${quantity} sản phẩm vào giỏ hàng`);
   };
 
   const handleBuyNow = () => {
-    // Implement your buy now logic here
     Alert.alert('Mua ngay', 'Chức năng này sẽ được thêm trong tương lai');
   };
 
-  const increaseQuantity = () => {
-    if (quantity < (product.stock || 10)) {
-      setQuantity(quantity + 1);
-    } else {
-      Alert.alert('Thông báo', 'Đã đạt số lượng tối đa có sẵn');
-    }
-  };
-
-  const decreaseQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(quantity - 1);
-    }
-  };
-
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
+      <View style={styles.container}>
       <Header title="Chi tiết sản phẩm" showBackButton={true} />
-      
-      <ScrollView style={styles.scrollContainer}>
-        {/* Product Image */}
-        <Image 
-          source={{ uri: product.image_url || 'https://via.placeholder.com/400' }}
+      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
+        <Image
+          source={{ uri: product.image_url }}
           style={styles.productImage}
-          resizeMode="cover"
+          
         />
-        
-        {/* Product Info */}
         <View style={styles.infoContainer}>
-          <Text style={styles.productName}>{product.product_name || 'Không có tên'}</Text>
-          <Text style={styles.productPrice}>
-            {(product.price || 0).toLocaleString()}₫
-          </Text>
-          
-          {product.sale_price && (
-            <View style={styles.saleContainer}>
-              <Text style={styles.originalPrice}>
-                {product.price.toLocaleString()}₫
-              </Text>
-              <Text style={styles.discountBadge}>
-                -{Math.round(((product.price - product.sale_price) / product.price) * 100)}%
-              </Text>
-            </View>
-          )}
-          
-          <View style={styles.stockContainer}>
-            <Text style={styles.stockText}>
-              Trạng thái: {product.stock > 0 ? 'Còn hàng' : 'Hết hàng'}
-            </Text>
-            <Text style={styles.stockCount}>
-              Số lượng: {product.stock || 0}
-            </Text>
-          </View>
+          <Text style={styles.productName}>{product.product_name}</Text>
+          <Text style={styles.productPrice}>{(product.price || 0).toLocaleString()}₫</Text>
         </View>
-        
+
         {/* Quantity Selector */}
         <View style={styles.quantityContainer}>
           <Text style={styles.quantityLabel}>Số lượng:</Text>
           <View style={styles.quantitySelector}>
-            <TouchableOpacity 
-              style={styles.quantityButton} 
-              onPress={decreaseQuantity}
-              disabled={quantity <= 1}
+            <Pressable
+              onPress={() => quantity > 1 && setQuantity(quantity - 1)}
+              style={({ pressed }) => [
+                styles.quantityIconButton,
+                pressed && styles.quantityIconButtonPressed,
+              ]}
             >
-              <Text style={styles.quantityButtonText}>-</Text>
-            </TouchableOpacity>
-            
+              <Ionicons name="remove-circle-outline" size={30} color="#FF5722" />
+            </Pressable>
             <Text style={styles.quantityText}>{quantity}</Text>
-            
-            <TouchableOpacity 
-              style={styles.quantityButton}
-              onPress={increaseQuantity}
-              disabled={quantity >= (product.stock || 10)}
+            <Pressable
+              onPress={() => quantity < (product.stock || 10) && setQuantity(quantity + 1)}
+              style={({ pressed }) => [
+                styles.quantityIconButton,
+                pressed && styles.quantityIconButtonPressed,
+              ]}
             >
-              <Text style={styles.quantityButtonText}>+</Text>
-            </TouchableOpacity>
+              <Ionicons name="add-circle-outline" size={30} color="#FF5722" />
+            </Pressable>
           </View>
         </View>
-        
-        {/* Description */}
-        <View style={styles.descriptionContainer}>
-          <Text style={styles.sectionTitle}>Mô tả sản phẩm</Text>
-          <Text style={styles.descriptionText}>
-            {product.description || 'Không có thông tin mô tả cho sản phẩm này.'}
-          </Text>
-        </View>
-        
-        {/* Specifications if available */}
-        {product.specifications && (
-          <View style={styles.specificationsContainer}>
-            <Text style={styles.sectionTitle}>Thông số kỹ thuật</Text>
-            {Object.entries(product.specifications).map(([key, value], index) => (
-              <View key={index} style={styles.specRow}>
-                <Text style={styles.specKey}>{key}:</Text>
-                <Text style={styles.specValue}>{value}</Text>
-              </View>
-            ))}
-          </View>
-        )}
       </ScrollView>
-      
+
       {/* Bottom Action Bar */}
       <View style={styles.actionBar}>
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.addToCartButton]}
+        <TouchableOpacity
+          style={styles.addToCartButton}
           onPress={handleAddToCart}
+          activeOpacity={0.8}
         >
           <Text style={styles.actionButtonText}>Thêm vào giỏ</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.buyNowButton]}
+        <TouchableOpacity
+          style={styles.buyNowButton}
           onPress={handleBuyNow}
+          activeOpacity={0.8}
         >
           <Text style={styles.actionButtonText}>Mua ngay</Text>
         </TouchableOpacity>
       </View>
     </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  //ScrollView Styles
+  scrollView: {
+    flex: 1,
+    backgroundColor: '#F5F5F5', // Màu nền nhẹ để tạo độ tương phản
+    paddingTop: 20,
+    paddingBottom: 20, // Để tránh bị che bởi action bar
+  },
+  // Container Styles
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#F5F5F5', // Màu nền nhẹ để tạo độ tương phản
   },
   scrollContainer: {
     flex: 1,
-    marginBottom: 60, // Leave space for action bar
   },
+  scrollContent: {
+    paddingBottom: 20, // Để tránh bị che bởi action bar
+  },
+
+
+  // Image Styles
   productImage: {
-    width: '100%',
-    height: 300,
+    alignSelf: 'center',
+    marginTop: 20,
+    width: '80%',
+    height: 350, // Tăng chiều cao để ảnh nổi bật hơn
+    resizeMode: 'cover', // Đổi sang cover để ảnh không bị méo
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    backgroundColor: '#E0E0E0', // Placeholder background khi ảnh đang tải
   },
+
+  // Info Section Styles
   infoContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    marginBottom: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: -20, // Đè lên phần ảnh để tạo hiệu ứng overlap
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 5,
   },
   productName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 10,
   },
   productPrice: {
-    fontSize: 20,
-    color: '#FF4500',
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#FF5722',
+    marginBottom: 12,
   },
-  saleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  originalPrice: {
-    fontSize: 16,
-    color: '#888',
-    textDecorationLine: 'line-through',
-    marginRight: 8,
-  },
-  discountBadge: {
-    backgroundColor: '#FF4500',
-    color: '#fff',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    fontSize: 12,
-  },
-  stockContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  stockText: {
-    fontSize: 14,
-    color: '#555',
-  },
-  stockCount: {
-    fontSize: 14,
-    color: '#555',
-  },
+
+  // Quantity Selector Styles
   quantityContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
   },
   quantityLabel: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '600',
     color: '#333',
   },
   quantitySelector: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-  },
-  quantityButton: {
-    backgroundColor: '#f0f0f0',
-    padding: 8,
-    width: 36,
-    alignItems: 'center',
-  },
-  quantityButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    borderColor: '#E0E0E0',
+    borderRadius: 10,
+    backgroundColor: '#FAFAFA',
+    height: 48,
+    minWidth: 150,
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
   },
   quantityText: {
-    paddingHorizontal: 16,
-    fontSize: 16,
-  },
-  descriptionContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
+    fontSize: 20,
+    fontWeight: '600',
     color: '#333',
+    minWidth: 40,
+    textAlign: 'center',
   },
-  descriptionText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#555',
+  quantityIconButton: {
+    padding: 6,
+    borderRadius: 8,
   },
-  specificationsContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    marginBottom: 16,
+  quantityIconButtonPressed: {
+    transform: [{ scale: 0.9 }],
+    backgroundColor: '#F0F0F0',
   },
-  specRow: {
-    flexDirection: 'row',
-    paddingVertical: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  specKey: {
-    flex: 1,
-    fontSize: 14,
-    color: '#555',
-  },
-  specValue: {
-    flex: 2,
-    fontSize: 14,
-    color: '#333',
-  },
+
+  // Action Bar Styles
   actionBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 60,
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    elevation: 5,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  actionButton: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    elevation: 5,
   },
   addToCartButton: {
-    backgroundColor: '#ff9800',
+    flex: 1,
+    backgroundColor: '#FF5722',
+    paddingVertical: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginRight: 8,
+    shadowColor: '#FF5722',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 3,
   },
   buyNowButton: {
-    backgroundColor: '#ff4500',
+    flex: 1,
+    backgroundColor: '#4CAF50',
+    paddingVertical: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginLeft: 8,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 3,
   },
   actionButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
   },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
+
+  // Error Text Style
   errorText: {
     fontSize: 18,
     color: '#666',
-    marginBottom: 16,
-  },
-  backButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: '#8B4513',
-    borderRadius: 4,
-  },
-  backButtonText: {
-    color: '#fff',
-    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
   },
 });

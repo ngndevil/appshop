@@ -7,6 +7,8 @@ import { handleCheckout } from './OrderService';
 const ProductCartScreen = () => {
   const { cartItems, increment, decrement, removeItem, setCartItems } = useCart();
 
+  console.log('Cart Items:', cartItems); 
+
   const totalCartItems = cartItems.reduce((total, item) => total + item.quantity, 0);
   const totalPrice = cartItems.reduce((total, item) => total + (item.price || 0) * item.quantity, 0);
 
