@@ -57,12 +57,12 @@ export default function AddProductScreen() {
       <Header title="Thêm sản phẩm" showBackButton={true} />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        <TextInput placeholder="Mã sản phẩm (VD: pro03)" style={styles.input} value={productId} onChangeText={setProductId} />
-        <TextInput placeholder="Tên sản phẩm" style={styles.input} value={productName} onChangeText={setProductName} />
-        <TextInput placeholder="Giá" style={styles.input} keyboardType="numeric" value={price} onChangeText={setPrice} />
-        <TextInput placeholder="Link hình ảnh" style={styles.input} value={imageUrl} onChangeText={setImageUrl} />
-        <TextInput placeholder="Mô tả" style={styles.input} value={description} onChangeText={setDescription} />
-        <TextInput placeholder="Số lượng trong kho" style={styles.input} keyboardType="numeric" value={stock} onChangeText={setStock} />
+        <TextInput placeholder="Mã sản phẩm (VD: pro03)" placeholderTextColor="#888" style={styles.input} value={productId} onChangeText={setProductId} />
+        <TextInput placeholder="Tên sản phẩm" placeholderTextColor="#888" style={styles.input} value={productName} onChangeText={setProductName} />
+        <TextInput placeholder="Giá" placeholderTextColor="#888" style={styles.input} keyboardType="numeric" value={price} onChangeText={setPrice} />
+        <TextInput placeholder="Link hình ảnh" placeholderTextColor="#888" style={styles.input} value={imageUrl} onChangeText={setImageUrl} />
+        <TextInput placeholder="Mô tả" placeholderTextColor="#888" style={styles.input} value={description} onChangeText={setDescription} />
+        <TextInput placeholder="Số lượng trong kho" placeholderTextColor="#888" style={styles.input} keyboardType="numeric" value={stock} onChangeText={setStock} />
       </ScrollView>
 
       <View style={styles.actionBar}>
