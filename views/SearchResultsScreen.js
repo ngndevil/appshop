@@ -9,7 +9,7 @@ export default function SearchResultsScreen({ route }) {
 
   const [sortOrder, setSortOrder] = useState('asc');
   const [minPrice, setMinPrice] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(10000000);
+  const [maxPrice, setMaxPrice] = useState(5000000);
   const [filteredProducts, setFilteredProducts] = useState([]);
 
   useEffect(() => {

@@ -1,15 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import { auth } from '../constants/firebaseConfig';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword,onAuthStateChanged, signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 
+import {  } from 'firebase/auth';
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
-
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    clientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
+    redirectUri: 'https://auth.expo.io/clothing_store_app/clothing_store_app',
+  });
+  WebBrowser.maybeCompleteAuthSession();
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { authentication } = response;
+      const credential = GoogleAuthProvider.credential(null, authentication.accessToken);
   
+      signInWithCredential(auth, credential)
+        .then(userCredential => {
+          const user = userCredential.user;
+          Alert.alert('Login Successful', `Welcome ${user.email}`);
+          navigation.replace('ProductListScreen');
+        })
+        .catch(err => {
+          console.log('Google Sign-In error:', err);
+          Alert.alert('Google Sign-In Failed', err.message);
+        });
+    }
+  }, [response]);
+  
+
   const handleLogin = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email)) {
@@ -44,6 +69,7 @@ const LoginScreen = ({ navigation }) => {
         }
         Alert.alert('Login Failed', errorMessage);
       });
+    
   };
 
   return (
@@ -91,7 +117,7 @@ const LoginScreen = ({ navigation }) => {
         <TouchableOpacity style={styles.socialButton}>
           <Ionicons name="logo-apple" size={24} color="#000" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.socialButton}>
+        <TouchableOpacity style={styles.socialButton} onPress={() => promptAsync()}>
           <Ionicons name="logo-google" size={24} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.socialButton}>
