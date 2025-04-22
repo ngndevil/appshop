@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useCart } from '../../context/CartProvider';
 import { getImageUrl } from '../../constants/firebaseStorage.ts';
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, isAdmin = false, onViewDetail, onEdit }) => {
   const navigation = useNavigation();
   const { cartItems, setCartItems } = useCart();
   const [imageUrl, setImageUrl] = useState(null);
@@ -14,9 +14,9 @@ const ProductCard = ({ product }) => {
     const fetchImage = async () => {
       if (product.image_url) {
         if (product.image_url.startsWith('http')) {
-          setImageUrl(product.image_url); // Full URL (e.g., imgur)
+          setImageUrl(product.image_url);
         } else {
-          const url = await getImageUrl(product.image_url); // Firebase Storage
+          const url = await getImageUrl(product.image_url);
           setImageUrl(url);
         }
       }
@@ -40,7 +40,19 @@ const ProductCard = ({ product }) => {
   };
 
   const handleViewDetail = () => {
-    navigation.navigate('ProductDetailScreen', { product });
+    if (onViewDetail) {
+      onViewDetail(product);
+    } else {
+      navigation.navigate('ProductDetailScreen', { product });
+    }
+  };
+
+  const handleEditProduct = () => {
+    if (onEdit) {
+      onEdit(product);
+    } else {
+      navigation.navigate('EditProductScreen', { product });
+    }
   };
 
   return (
@@ -68,6 +80,15 @@ const ProductCard = ({ product }) => {
           <Text style={styles.buttonText}>Chi tiết</Text>
         </TouchableOpacity>
       </View>
+
+      {isAdmin && (
+        <TouchableOpacity
+          style={[styles.button, styles.editButton]}
+          onPress={handleEditProduct}
+        >
+          <Text style={styles.buttonText}>Edit</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -124,6 +145,10 @@ const styles = StyleSheet.create({
   },
   viewDetailButton: {
     backgroundColor: '#555',
+  },
+  editButton: {
+    backgroundColor: '#CC9966',
+    marginTop: 8,
   },
   buttonText: {
     color: '#fff',
