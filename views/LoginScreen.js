@@ -12,8 +12,8 @@ const LoginScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
-    redirectUri: 'https://auth.expo.io/clothing_store_app/clothing_store_app',
+    clientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',//chưa có cần cập nhật
+    redirectUri: 'https://auth.expo.io/clothing_store_app/clothing_store_app',// chưa có cần cập nhật
   });
   WebBrowser.maybeCompleteAuthSession();
   useEffect(() => {
