@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } fro
 import { getAuth, updateProfile, signOut } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
-
+import SimpleHeader from '../components/common/SimpleHeader';
 const EditProfileScreen = () => {
   const auth = getAuth();
   const user = auth.currentUser;
@@ -54,7 +54,7 @@ const EditProfileScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Chỉnh sửa hồ sơ</Text>
+      <SimpleHeader title="Chỉnh sửa hồ sơ" onBack={() => navigation.goBack()} />
       <TouchableOpacity onPress={handlePickImage} style={styles.avatarContainer}>
         <Image
           source={photoURL ? { uri: photoURL } : require('../assets/images/default-avatar.jpg')}
