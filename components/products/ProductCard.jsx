@@ -10,6 +10,8 @@ const ProductCard = ({ product, isAdmin = false, onViewDetail, onEdit }) => {
   const [imageUrl, setImageUrl] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const isOutOfStock = product.stock <= 0;
+
   useEffect(() => {
     const fetchImage = async () => {
       if (product.image_url) {
@@ -27,6 +29,8 @@ const ProductCard = ({ product, isAdmin = false, onViewDetail, onEdit }) => {
   }, [product.image_url]);
 
   const handleAddToCart = () => {
+    if (isOutOfStock) return;
+
     const existingItem = cartItems.find((item) => item.id === product.id);
     if (existingItem) {
       setCartItems(
@@ -57,25 +61,38 @@ const ProductCard = ({ product, isAdmin = false, onViewDetail, onEdit }) => {
 
   return (
     <View style={styles.card}>
-      {loading ? (
-        <View style={styles.imageContainer}>
-          <ActivityIndicator size="small" color="#8B4513" />
-        </View>
-      ) : imageUrl ? (
-        <Image source={{ uri: imageUrl }} style={styles.image} />
-      ) : (
-        <View style={styles.imageContainer}>
-          <Text style={styles.fallbackText}>Không có ảnh</Text>
-        </View>
-      )}
+      <View style={styles.imageWrapper}>
+        {loading ? (
+          <View style={styles.imageContainer}>
+            <ActivityIndicator size="small" color="#8B4513" />
+          </View>
+        ) : imageUrl ? (
+          <Image source={{ uri: imageUrl }} style={styles.image} />
+        ) : (
+          <View style={styles.imageContainer}>
+            <Text style={styles.fallbackText}>Không có ảnh</Text>
+          </View>
+        )}
+        {isOutOfStock && (
+          <View style={styles.overlay}>
+            <Text style={styles.outOfStockText}>OUT OF STOCK</Text>
+          </View>
+        )}
+      </View>
 
       <Text style={styles.title}>{product.product_name || product.title || 'Sản phẩm không tên'}</Text>
       <Text style={styles.price}>{(product.price || 0).toLocaleString()}₫</Text>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={handleAddToCart}>
-          <Text style={styles.buttonText}>Thêm vào giỏ</Text>
-        </TouchableOpacity>
+        {!isAdmin && (
+          <TouchableOpacity
+            style={[styles.button, isOutOfStock && styles.disabledButton]}
+            onPress={handleAddToCart}
+            disabled={isOutOfStock}
+          >
+            <Text style={styles.buttonText}>Thêm vào giỏ</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity style={[styles.button, styles.viewDetailButton]} onPress={handleViewDetail}>
           <Text style={styles.buttonText}>Chi tiết</Text>
         </TouchableOpacity>
@@ -103,22 +120,42 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     elevation: 2,
   },
+  imageWrapper: {
+    position: 'relative',
+    width: '100%',
+    height: 150,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
   imageContainer: {
     width: '100%',
     height: 150,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f2f2f2',
-    borderRadius: 8,
   },
   image: {
     width: '100%',
-    height: 150,
-    borderRadius: 8,
+    height: '100%',
   },
   fallbackText: {
     fontSize: 14,
     color: '#999',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  outOfStockText: {
+    color: 'red',
+    fontWeight: 'bold',
+    fontSize: 18,
   },
   title: {
     fontSize: 18,
@@ -149,6 +186,9 @@ const styles = StyleSheet.create({
   editButton: {
     backgroundColor: '#CC9966',
     marginTop: 8,
+  },
+  disabledButton: {
+    backgroundColor: '#ccc',
   },
   buttonText: {
     color: '#fff',
