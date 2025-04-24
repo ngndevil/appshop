@@ -1,11 +1,21 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import {View,Text,FlatList,StyleSheet,ActivityIndicator,Alert,TouchableOpacity,} from 'react-native';
-import { collection, getDocs } from 'firebase/firestore';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  TouchableOpacity,
+} from 'react-native';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../constants/firebaseConfig';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { useNavigation, useFocusEffect,useRoute  } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import Header from '../components/common/Header';
 import ProductCard from '../components/products/ProductCard';
+import Icon from 'react-native-vector-icons/Feather';
+import FloatingAdminMenu from '../components/admin/FloatingAdminMenu';
 
 export default function ProductListScreen() {
   const route = useRoute();
@@ -19,18 +29,34 @@ export default function ProductListScreen() {
   const navigation = useNavigation();
   const auth = getAuth();
 
+
+ 
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setIsAuthenticated(true);
-        setIsAdmin(user.email === 'admin@gmail.com');
-        fetchData();
+
+        try {
+          const adminDocRef = doc(db, 'admin', 'adminacc');
+          const adminDoc = await getDoc(adminDocRef);
+          const adminData = adminDoc.data();
+
+          const emails = Object.values(adminData || {});
+          const isAdminUser = emails.includes(user.email);
+          setIsAdmin(isAdminUser);
+
+          fetchData();
+        } catch (error) {
+          console.error('Lỗi kiểm tra quyền admin:', error);
+        }
       } else {
         setIsAuthenticated(false);
         setLoading(false);
         navigation.navigate('LoginScreen');
       }
     });
+
     return () => unsubscribe();
   }, [navigation]);
 
@@ -40,7 +66,7 @@ export default function ProductListScreen() {
         fetchData();
         if (route.params?.refresh) {
           navigation.setParams({ refresh: false });
-      }
+        }
       }
     }, [isAuthenticated, route.params?.refresh])
   );
@@ -120,8 +146,8 @@ export default function ProductListScreen() {
         const { created_at, ...cleanProduct } = item;
         navigation.navigate('EditProductScreen', { product: cleanProduct });
       }}
-      
       isAdmin={isAdmin}
+      showAddToCart={!isAdmin}
     />
   );
 
@@ -156,16 +182,7 @@ export default function ProductListScreen() {
         ListEmptyComponent={<Text style={styles.emptyText}>Không tìm thấy sản phẩm</Text>}
       />
 
-      {isAdmin && (
-        <View style={styles.floatingButtonContainer}>
-          <TouchableOpacity
-            style={styles.floatingButton}
-            onPress={() => navigation.navigate('AddProductScreen')}
-          >
-            <Text style={styles.floatingButtonText}>+</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+    {isAdmin && <FloatingAdminMenu />}
     </View>
   );
 }
@@ -194,31 +211,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginTop: 20,
-  },
-  floatingButtonContainer: {
-    position: 'absolute',
-    bottom: 30,
-    right: 20,
-    zIndex: 100,
-    elevation: 100,
-    pointerEvents: 'box-none',
-  },
-  floatingButton: {
-    backgroundColor: '#CC9966',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 8,
-  },
-  floatingButtonText: {
-    color: 'white',
-    fontSize: 28,
-    fontWeight: 'bold',
   },
 });

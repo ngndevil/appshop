@@ -10,33 +10,48 @@ import {
 import MultiSlider from '@ptomasroos/react-native-multi-slider';
 import Header from '../components/common/Header';
 import ProductCard from '../components/products/ProductCard';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../constants/firebaseConfig';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import FloatingAdminMenu from '../components/admin/FloatingAdminMenu';
 
 export default function SearchResultsScreen({ route }) {
   const { searchQuery, products = [] } = route.params || {};
-
   const [sortOrder, setSortOrder] = useState('asc');
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(5000000);
+  const [sliderMinPrice, setSliderMinPrice] = useState(0);
+  const [sliderMaxPrice, setSliderMaxPrice] = useState(5000000);
   const [filteredProducts, setFilteredProducts] = useState([]);
-
   const [isAdmin, setIsAdmin] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filterHeight] = useState(new Animated.Value(0));
 
+  const auth = getAuth();
   const navigation = useNavigation();
 
   useEffect(() => {
-    const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user?.email === 'admin@gmail.com') {
-        setIsAdmin(true);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const adminDocRef = doc(db, 'admin', 'adminacc');
+          const adminDoc = await getDoc(adminDocRef);
+          const adminData = adminDoc.data();
+          const emails = Object.values(adminData || {});
+          const isAdminUser = emails.includes(user.email);
+          setIsAdmin(isAdminUser);
+        } catch (error) {
+          console.error('Lỗi kiểm tra quyền admin:', error);
+        }
+      } else {
+        navigation.navigate('LoginScreen');
       }
     });
+
     return () => unsubscribe();
-  }, []);
+  }, [navigation]);
 
   useEffect(() => {
     filterAndSortProducts();
@@ -55,6 +70,8 @@ export default function SearchResultsScreen({ route }) {
     setSortOrder('asc');
     setMinPrice(0);
     setMaxPrice(5000000);
+    setSliderMinPrice(0);
+    setSliderMaxPrice(5000000);
   };
 
   const toggleFilters = () => {
@@ -67,7 +84,7 @@ export default function SearchResultsScreen({ route }) {
     } else {
       setShowFilters(true);
       Animated.timing(filterHeight, {
-        toValue: 240,
+        toValue: 260,
         duration: 250,
         useNativeDriver: false,
       }).start();
@@ -89,7 +106,6 @@ export default function SearchResultsScreen({ route }) {
     <View style={styles.container}>
       <Header title={`Kết quả tìm kiếm: "${searchQuery}"`} showBackButton={true} />
 
-      {/* --- Nút bật tắt bộ lọc --- */}
       <TouchableOpacity style={styles.filterToggleButton} onPress={toggleFilters}>
         <Feather name="filter" size={18} color="#fff" style={{ marginRight: 6 }} />
         <Text style={styles.filterToggleButtonText}>
@@ -97,7 +113,6 @@ export default function SearchResultsScreen({ route }) {
         </Text>
       </TouchableOpacity>
 
-      {/* --- Bộ lọc --- */}
       {showFilters && (
         <Animated.View style={[styles.filterContainer, { height: filterHeight }]}>
           <Text style={styles.filterTitle}>Sắp xếp theo giá:</Text>
@@ -106,35 +121,33 @@ export default function SearchResultsScreen({ route }) {
               style={[styles.sortButton, sortOrder === 'asc' && styles.activeButton]}
               onPress={() => setSortOrder('asc')}
             >
-              <Text style={[
-                styles.sortButtonText,
-                sortOrder === 'asc' && styles.activeSortButtonText
-              ]}>Tăng dần</Text>
+              <Text style={[styles.sortButtonText, sortOrder === 'asc' && styles.activeSortButtonText]}>
+                Tăng dần
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.sortButton, sortOrder === 'desc' && styles.activeButton]}
               onPress={() => setSortOrder('desc')}
             >
-              <Text style={[
-                styles.sortButtonText,
-                sortOrder === 'desc' && styles.activeSortButtonText
-              ]}>Giảm dần</Text>
+              <Text style={[styles.sortButtonText, sortOrder === 'desc' && styles.activeSortButtonText]}>
+                Giảm dần
+              </Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.sliderSection}>
             <Text style={styles.sliderLabel}>
-              Giá từ: {minPrice.toLocaleString()}₫ - {maxPrice.toLocaleString()}₫
+              Giá từ: {sliderMinPrice.toLocaleString()}₫ - {sliderMaxPrice.toLocaleString()}₫
             </Text>
             <MultiSlider
-              values={[minPrice, maxPrice]}
+              values={[sliderMinPrice, sliderMaxPrice]}
               min={0}
               max={5000000}
               step={10000}
               sliderLength={300}
               onValuesChange={values => {
-                setMinPrice(values[0]);
-                setMaxPrice(values[1]);
+                setSliderMinPrice(values[0]);
+                setSliderMaxPrice(values[1]);
               }}
               selectedStyle={{ backgroundColor: '#2C3E50' }}
               unselectedStyle={{ backgroundColor: '#D5DBDB' }}
@@ -150,18 +163,31 @@ export default function SearchResultsScreen({ route }) {
             />
           </View>
 
-          <TouchableOpacity style={styles.resetButton} onPress={resetFilters}>
-            <Text style={styles.resetButtonText}>Reset bộ lọc</Text>
-          </TouchableOpacity>
+          <View style={styles.filterActions}>
+            <TouchableOpacity
+              style={[styles.button, styles.applyButton]}
+              onPress={() => {
+                setMinPrice(sliderMinPrice);
+                setMaxPrice(sliderMaxPrice);
+              }}
+            >
+              <Text style={styles.buttonText}>Áp dụng</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, styles.resetButton]}
+              onPress={resetFilters}
+            >
+              <Text style={styles.buttonText}>Reset bộ lọc</Text>
+            </TouchableOpacity>
+          </View>
         </Animated.View>
       )}
 
-      {/* --- Hiển thị số sản phẩm --- */}
       <Text style={{ marginLeft: 16, marginTop: 10, color: '#555', fontSize: 13 }}>
         Đang hiển thị: {filteredProducts.length} sản phẩm
       </Text>
 
-      {/* --- Danh sách sản phẩm --- */}
       <FlatList
         data={filteredProducts}
         keyExtractor={item => item.id?.toString()}
@@ -172,17 +198,7 @@ export default function SearchResultsScreen({ route }) {
         }
       />
 
-      {/* --- Nút thêm sản phẩm cho admin --- */}
-      {isAdmin && (
-        <View style={styles.floatingButtonContainer}>
-          <TouchableOpacity
-            style={styles.floatingButton}
-            onPress={() => navigation.navigate('AddProductScreen')}
-          >
-            <Text style={styles.floatingButtonText}>+</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      {isAdmin && <FloatingAdminMenu />}
     </View>
   );
 }
@@ -250,14 +266,28 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
 
-  resetButton: {
-    marginTop: 6,
-    backgroundColor: '#e74c3c',
-    paddingVertical: 8,
+  filterActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 12,
+  },
+  button: {
+    flex: 1,
+    paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
   },
-  resetButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 13 },
+  applyButton: {
+    backgroundColor: '#27ae60',
+  },
+  resetButton: {
+    backgroundColor: '#e74c3c',
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
 
   listContainer: { padding: 16 },
 
@@ -266,32 +296,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginTop: 20,
-  },
-
-  floatingButtonContainer: {
-    position: 'absolute',
-    bottom: 30,
-    right: 20,
-    zIndex: 100,
-    elevation: 100,
-    pointerEvents: 'box-none',
-  },
-  floatingButton: {
-    backgroundColor: '#CC9966',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 8,
-  },
-  floatingButtonText: {
-    color: 'white',
-    fontSize: 28,
-    fontWeight: 'bold',
   },
 });
