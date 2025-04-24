@@ -29,14 +29,10 @@ export default function ProductListScreen() {
   const navigation = useNavigation();
   const auth = getAuth();
 
-
- 
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setIsAuthenticated(true);
-
         try {
           const adminDocRef = doc(db, 'admin', 'adminacc');
           const adminDoc = await getDoc(adminDocRef);
@@ -178,11 +174,13 @@ export default function ProductListScreen() {
         data={filteredProducts}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
+        numColumns={2}
+        columnWrapperStyle={styles.columnWrapper}
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={<Text style={styles.emptyText}>Không tìm thấy sản phẩm</Text>}
       />
 
-    {isAdmin && <FloatingAdminMenu />}
+      {isAdmin && <FloatingAdminMenu />}
     </View>
   );
 }
@@ -193,8 +191,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f8f8',
   },
   listContainer: {
-    padding: 16,
+    padding: 8,
     paddingBottom: 100,
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
   },
   loadingContainer: {
     flex: 1,

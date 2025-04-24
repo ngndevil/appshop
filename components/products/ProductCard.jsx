@@ -86,37 +86,36 @@ const ProductCard = ({ product, isAdmin = false, onViewDetail, onEdit }) => {
       <View style={styles.buttonContainer}>
         {!isAdmin && (
           <TouchableOpacity
-            style={[styles.button, isOutOfStock && styles.disabledButton]}
+            style={[styles.button, styles.addToCartButton, isOutOfStock && styles.disabledButton]}
             onPress={handleAddToCart}
             disabled={isOutOfStock}
           >
             <Text style={styles.buttonText}>Thêm vào giỏ</Text>
           </TouchableOpacity>
         )}
+
         <TouchableOpacity style={[styles.button, styles.viewDetailButton]} onPress={handleViewDetail}>
           <Text style={styles.buttonText}>Chi tiết</Text>
         </TouchableOpacity>
-      </View>
 
-      {isAdmin && (
-        <TouchableOpacity
-          style={[styles.button, styles.editButton]}
-          onPress={handleEditProduct}
-        >
-          <Text style={styles.buttonText}>Edit</Text>
-        </TouchableOpacity>
-      )}
+        {isAdmin && (
+          <TouchableOpacity style={[styles.button, styles.editButton]} onPress={handleEditProduct}>
+            <Text style={styles.buttonText}>Edit</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
+    width: '48%',
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
-    padding: 16,
-    margin: 8,
+    padding: 12,
+    marginBottom: 16,
     backgroundColor: '#fff',
     elevation: 2,
   },
@@ -158,34 +157,39 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   title: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     marginVertical: 8,
+    minHeight: 40, //Đảm bảo mọi tiêu đề chiếm cùng chiều cao
   },
+  
   price: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#888',
     marginBottom: 8,
   },
   buttonContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
+    marginTop: 8,
+    gap: 8,
   },
   button: {
-    backgroundColor: '#8B4513',
-    borderRadius: 8,
+    flexGrow: 1,
+    flexBasis: '48%',
     paddingVertical: 8,
-    paddingHorizontal: 12,
-    flex: 1,
-    marginHorizontal: 4,
+    borderRadius: 8,
     alignItems: 'center',
+  },
+  addToCartButton: {
+    backgroundColor: '#8B4513',
   },
   viewDetailButton: {
     backgroundColor: '#555',
   },
   editButton: {
     backgroundColor: '#CC9966',
-    marginTop: 8,
   },
   disabledButton: {
     backgroundColor: '#ccc',
@@ -193,7 +197,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 12,
   },
 });
 
