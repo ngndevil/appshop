@@ -14,6 +14,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
 import { useCart } from '../../context/CartProvider';
+import Icon from 'react-native-vector-icons/Feather';
 
 const { width, height } = Dimensions.get('window');
 
@@ -47,7 +48,6 @@ const Header = (props) => {
 
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
-  // 🔁 Load avatar lại mỗi khi focus
   useFocusEffect(
     React.useCallback(() => {
       const user = auth.currentUser;
@@ -155,7 +155,7 @@ const Header = (props) => {
             </TouchableOpacity>
           ) : showSearchBar && !isExpanded ? (
             <TouchableOpacity style={[styles.searchCircleButton, styles.searchCircleButtonShifted]} onPress={toggleSearch}>
-              <Image source={require('../../assets/images/location.png')} style={styles.searchIcon} resizeMode="contain" />
+              <Icon name="search" size={18} color="#8B4513" />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -344,11 +344,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#ddd',
-  },
-  searchIcon: {
-    width: 18,
-    height: 18,
-    tintColor: '#8B4513',
   },
   searchCircleButtonShifted: {
     marginLeft: 15,
