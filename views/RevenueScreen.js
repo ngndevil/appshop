@@ -5,7 +5,7 @@ import { BarChart } from 'react-native-chart-kit';
 import Header from '../components/common/Header';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
-
+import SimpleHeader from '../components/common/SimpleHeader';
 const screenWidth = Dimensions.get('window').width;
 
 export default function RevenueScreen() {
@@ -93,7 +93,7 @@ export default function RevenueScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="Thống kê doanh thu" showBackButton />
+      <SimpleHeader title="Thống kê doanh thu" showBackButton />
 
       <View style={styles.filterRow}>
         <TouchableOpacity

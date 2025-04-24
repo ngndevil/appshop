@@ -1,27 +1,25 @@
 import React from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Image, 
-  TextInput, 
-  FlatList, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  TextInput,
+  FlatList,
   TouchableWithoutFeedback,
   Keyboard,
-  Dimensions
+  Dimensions,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
 import { useCart } from '../../context/CartProvider';
 
 const { width, height } = Dimensions.get('window');
 
-// Interface định nghĩa kiểu props để tránh lỗi
 const Header = (props) => {
-  // Destructuring props với explicit defaults
   const {
-    title = "",
+    title = '',
     showBackButton = false,
     rightComponent = null,
     showSearchBar = false,
@@ -33,39 +31,34 @@ const Header = (props) => {
     onFilterCategory = () => {},
   } = props;
 
-  // Khai báo state rõ ràng
   const navigation = useNavigation();
   const auth = getAuth();
   const { cartItems } = useCart();
-  
-  // Nhóm các state liên quan đến nhau
+
   const [searchState, setSearchState] = React.useState({
     query: '',
     showSuggestions: false,
-    isExpanded: false, // đổi tên từ isSearchExpanded thành isExpanded và đặt trong object
+    isExpanded: false,
   });
-  const [userPhotoURL, setUserPhotoURL] = React.useState(null);
-  const [showSortModal, setShowSortModal] = React.useState(false);
-  const [showFilterModal, setShowFilterModal] = React.useState(false);
-  
-  // Refs
-  const searchInputRef = React.useRef(null);
 
-  // Trích xuất các giá trị từ searchState để dễ sử dụng
+  const [userPhotoURL, setUserPhotoURL] = React.useState(null);
+  const searchInputRef = React.useRef(null);
   const { query, showSuggestions, isExpanded } = searchState;
 
-  // Computed values
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
-  // Effects
-  React.useEffect(() => {
-    const user = auth.currentUser;
-    if (user) {
-      setUserPhotoURL(user.photoURL);
-    }
-  }, []);
+  // 🔁 Load avatar lại mỗi khi focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const user = auth.currentUser;
+      if (user) {
+        setUserPhotoURL(user.photoURL);
+      } else {
+        setUserPhotoURL(null);
+      }
+    }, [])
+  );
 
-  // Handlers - cập nhật toàn bộ để sử dụng searchState thay vì các state riêng lẻ
   const handleAvatarPress = () => {
     navigation.navigate('EditProfileScreen');
   };
@@ -75,37 +68,37 @@ const Header = (props) => {
   };
 
   const handleSearch = (text) => {
-    setSearchState(prev => ({
+    setSearchState((prev) => ({
       ...prev,
       query: text,
-      showSuggestions: text.trim().length > 0
+      showSuggestions: text.trim().length > 0,
     }));
     onSearch(text);
   };
 
   const handlePressSearchButton = () => {
-    setSearchState(prev => ({
+    setSearchState((prev) => ({
       ...prev,
-      showSuggestions: false
+      showSuggestions: false,
     }));
     onSubmitSearch(query);
     Keyboard.dismiss();
   };
 
   const handleSelectSuggestion = (product) => {
-    setSearchState(prev => ({
+    setSearchState((prev) => ({
       ...prev,
       query: product.product_name || '',
-      showSuggestions: false
+      showSuggestions: false,
     }));
     onSelectProduct(product);
   };
 
   const toggleSearch = () => {
     const newExpandedState = !isExpanded;
-    setSearchState(prev => ({
+    setSearchState((prev) => ({
       ...prev,
-      isExpanded: newExpandedState
+      isExpanded: newExpandedState,
     }));
 
     if (newExpandedState) {
@@ -117,21 +110,19 @@ const Header = (props) => {
 
   const collapseSearch = () => {
     if (isExpanded) {
-      setSearchState(prev => ({
+      setSearchState((prev) => ({
         ...prev,
         isExpanded: false,
-        showSuggestions: false
+        showSuggestions: false,
       }));
       Keyboard.dismiss();
     }
   };
 
-  // Handler để tránh sự kiện click lan truyền
   const handleSearchAreaPress = (e) => {
     e.stopPropagation();
   };
 
-  // Rendering helpers
   const renderSuggestion = ({ item }) => (
     <TouchableOpacity style={styles.suggestionItem} onPress={() => handleSelectSuggestion(item)}>
       <Image
@@ -140,51 +131,42 @@ const Header = (props) => {
         defaultSource={require('../../assets/images/default-avatar.jpg')}
       />
       <View style={styles.suggestionContent}>
-        <Text style={styles.suggestionTitle} numberOfLines={1}>{item.product_name}</Text>
+        <Text style={styles.suggestionTitle} numberOfLines={1}>
+          {item.product_name}
+        </Text>
         <Text style={styles.suggestionPrice}>{(item.price || 0).toLocaleString()}₫</Text>
       </View>
     </TouchableOpacity>
   );
 
-  // Main render với conditional rendering được viết rõ ràng
   return (
     <View style={styles.headerContainer}>
-      {/* Backdrop overlay có điều kiện */}
       {Boolean(isExpanded) && (
         <TouchableWithoutFeedback onPress={collapseSearch}>
           <View style={styles.backdropOverlay} />
         </TouchableWithoutFeedback>
       )}
-      
+
       <View style={styles.header}>
-        {/* Left side - Search icon or back button */}
         <View style={styles.leftContainer}>
           {showBackButton ? (
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
               <Text style={styles.backButton}>←</Text>
             </TouchableOpacity>
-          ) : showSearchBar ? (
-            !isExpanded ? (
-              <TouchableOpacity 
-                style={[styles.searchCircleButton, styles.searchCircleButtonShifted]} 
-                onPress={toggleSearch}
-              >
-                <Image 
-                  source={require('../../assets/images/location.png')} 
-                  style={styles.searchIcon} 
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-            ) : null
+          ) : showSearchBar && !isExpanded ? (
+            <TouchableOpacity style={[styles.searchCircleButton, styles.searchCircleButtonShifted]} onPress={toggleSearch}>
+              <Image source={require('../../assets/images/location.png')} style={styles.searchIcon} resizeMode="contain" />
+            </TouchableOpacity>
           ) : null}
         </View>
 
-        {/* Middle - Search bar when expanded or title */}
-        <View style={[
-          styles.middleContainer, 
-          isExpanded && styles.searchActive,
-          isExpanded && styles.expandedMiddleContainer
-        ]}>
+        <View
+          style={[
+            styles.middleContainer,
+            isExpanded && styles.searchActive,
+            isExpanded && styles.expandedMiddleContainer,
+          ]}
+        >
           {showSearchBar && isExpanded ? (
             <TouchableWithoutFeedback onPress={handleSearchAreaPress}>
               <View style={styles.searchContainer}>
@@ -210,26 +192,16 @@ const Header = (props) => {
           ) : null}
         </View>
 
-        {/* Right side - Only show when search is NOT expanded */}
         {!isExpanded && (
           <View style={styles.rightContainer}>
             {rightComponent}
 
-            <TouchableOpacity
-              style={styles.orderHistoryButton}
-              onPress={handleOrderHistoryPress}
-            >
+            <TouchableOpacity style={styles.orderHistoryButton} onPress={handleOrderHistoryPress}>
               <Text style={styles.orderHistoryText}>Lịch sử</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.cartIconContainer}
-              onPress={() => navigation.navigate('ProductCartScreen')}
-            >
-              <Image
-                source={require('../../assets/images/cart.png')}
-                style={styles.cartIcon}
-              />
+            <TouchableOpacity style={styles.cartIconContainer} onPress={() => navigation.navigate('ProductCartScreen')}>
+              <Image source={require('../../assets/images/cart.png')} style={styles.cartIcon} />
               {cartItemCount > 0 && (
                 <View style={styles.cartBadge}>
                   <Text style={styles.cartBadgeText}>{cartItemCount}</Text>
@@ -247,7 +219,6 @@ const Header = (props) => {
         )}
       </View>
 
-      {/* Search suggestions với điều kiện rõ ràng */}
       {Boolean(showSearchBar && showSuggestions && searchSuggestions.length > 0) && (
         <TouchableWithoutFeedback onPress={handleSearchAreaPress}>
           <View style={[styles.suggestionsContainer, isExpanded && styles.searchActive]}>
@@ -264,7 +235,6 @@ const Header = (props) => {
   );
 };
 
-// Styles không thay đổi
 const styles = StyleSheet.create({
   headerContainer: {
     zIndex: 100,
@@ -277,8 +247,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: Dimensions.get('window').height,
-    width: Dimensions.get('window').width,
+    height,
+    width,
     backgroundColor: 'transparent',
     zIndex: 90,
   },
@@ -313,7 +283,7 @@ const styles = StyleSheet.create({
     height: 36,
   },
   searchActive: {
-    zIndex: 1001, 
+    zIndex: 1001,
   },
   backButtonContainer: {
     padding: 5,
@@ -352,7 +322,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
     padding: 0,
-    paddingHorizontal: 0,
   },
   searchButton: {
     backgroundColor: '#8B4513',

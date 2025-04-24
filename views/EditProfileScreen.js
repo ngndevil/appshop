@@ -1,15 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Alert,
+} from 'react-native';
 import { getAuth, updateProfile, signOut } from 'firebase/auth';
+import { doc, setDoc, getFirestore } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system'; // ✅
 import SimpleHeader from '../components/common/SimpleHeader';
+
+const IMGUR_CLIENT_ID = '41e2797d57ce1a3';
+
 const EditProfileScreen = () => {
   const auth = getAuth();
   const user = auth.currentUser;
   const navigation = useNavigation();
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [photoURL, setPhotoURL] = useState(user?.photoURL || null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handlePickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -30,17 +44,101 @@ const EditProfileScreen = () => {
     }
   };
 
+  // ✅ Sử dụng base64 thay vì FormData
+  const uploadImageToImgur = async (imageUri) => {
+    try {
+      const base64 = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      const response = await fetch('https://api.imgur.com/3/image', {
+        method: 'POST',
+        headers: {
+          Authorization: `Client-ID ${IMGUR_CLIENT_ID}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: base64,
+          type: 'base64',
+        }),
+      });
+
+      const data = await response.json();
+      if (!data.success) throw new Error('Tải ảnh lên Imgur thất bại');
+      return data.data.link;
+    } catch (err) {
+      console.error('Upload error:', err);
+      throw err;
+    }
+  };
+
   const handleSave = async () => {
     try {
+      setIsUploading(true);
+      let uploadedPhotoURL = photoURL;
+
+      if (photoURL && photoURL.startsWith('file://')) {
+        uploadedPhotoURL = await uploadImageToImgur(photoURL);
+      }
+
       await updateProfile(user, {
         displayName,
-        photoURL,
+        photoURL: uploadedPhotoURL || null,
       });
+
+      await setDoc(
+        doc(getFirestore(), 'users', user.uid),
+        {
+          displayName,
+          photoURL: uploadedPhotoURL || null,
+          email: user.email,
+        },
+        { merge: true }
+      );
+
+      await auth.currentUser.reload();
+      const updatedUser = auth.currentUser;
+      setDisplayName(updatedUser.displayName || '');
+      setPhotoURL(updatedUser.photoURL || null);
+
       Alert.alert('Thành công', 'Cập nhật hồ sơ thành công!');
-      navigation.goBack();
     } catch (error) {
       Alert.alert('Lỗi', error.message);
+    } finally {
+      setIsUploading(false);
     }
+  };
+
+  const handleDeleteAvatar = () => {
+    Alert.alert('Xác nhận', 'Bạn có chắc muốn xóa ảnh đại diện?', [
+      {
+        text: 'Hủy',
+        style: 'cancel',
+      },
+      {
+        text: 'Xóa',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await updateProfile(user, {
+              photoURL: null,
+            });
+            await setDoc(
+              doc(getFirestore(), 'users', user.uid),
+              {
+                photoURL: null,
+              },
+              { merge: true }
+            );
+            await auth.currentUser.reload();
+            setPhotoURL(null);
+            Alert.alert('Đã xóa ảnh đại diện');
+          } catch (error) {
+            Alert.alert('Lỗi khi xóa ảnh', error.message);
+          }
+        },
+      },
+    ]);
   };
 
   const handleLogout = async () => {
@@ -62,14 +160,21 @@ const EditProfileScreen = () => {
         />
         <Text style={styles.changePhotoText}>Thay đổi ảnh</Text>
       </TouchableOpacity>
+
+      {photoURL && (
+        <TouchableOpacity onPress={handleDeleteAvatar}>
+          <Text style={styles.deletePhotoText}>Xóa ảnh đại diện</Text>
+        </TouchableOpacity>
+      )}
+
       <TextInput
         style={styles.input}
         placeholder="Tên hiển thị"
         value={displayName}
         onChangeText={setDisplayName}
       />
-      <TouchableOpacity style={styles.button} onPress={handleSave}>
-        <Text style={styles.buttonText}>Lưu</Text>
+      <TouchableOpacity style={styles.button} onPress={handleSave} disabled={isUploading}>
+        <Text style={styles.buttonText}>{isUploading ? 'Đang lưu...' : 'Lưu'}</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.button, styles.orderHistoryButton]}
@@ -90,12 +195,6 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#fff',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
   avatarContainer: {
     alignItems: 'center',
     marginBottom: 16,
@@ -111,6 +210,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
     color: '#8B4513',
     fontSize: 16,
+  },
+  deletePhotoText: {
+    textAlign: 'center',
+    color: '#ff4d4d',
+    fontSize: 14,
+    marginBottom: 12,
   },
   input: {
     borderWidth: 1,
