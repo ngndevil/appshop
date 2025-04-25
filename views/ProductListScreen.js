@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
-  TouchableOpacity,
 } from 'react-native';
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../constants/firebaseConfig';
@@ -14,7 +13,6 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import Header from '../components/common/Header';
 import ProductCard from '../components/products/ProductCard';
-import Icon from 'react-native-vector-icons/Feather';
 import FloatingAdminMenu from '../components/admin/FloatingAdminMenu';
 
 export default function ProductListScreen() {

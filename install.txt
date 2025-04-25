@@ -1,1 +1,5 @@
-react-native-chart-kit với date-fns, react-native-community/datetimepicker, react-native-reanimated,@ptomasroos/react-native-multi-slider
+react-native-chart-kit với date-fns
+ react-native-community/datetimepicker
+ react-native-reanimated
+@ptomasroos/react-native-multi-slider
+rn-slide-button

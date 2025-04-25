@@ -1,4 +1,4 @@
-import React from 'react';
+import React,{ useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,13 +12,19 @@ import {
   Dimensions,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { getAuth } from 'firebase/auth';
+import { getAuth,onAuthStateChanged } from 'firebase/auth';
 import { useCart } from '../../context/CartProvider';
 import Icon from 'react-native-vector-icons/Feather';
-
+import { db } from '../../constants/firebaseConfig'
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import OrderManagementScreen from '@/views/OrderManagementScreen';
 const { width, height } = Dimensions.get('window');
 
 const Header = (props) => {
+  
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
   const {
     title = '',
     showBackButton = false,
@@ -47,7 +53,30 @@ const Header = (props) => {
   const { query, showSuggestions, isExpanded } = searchState;
 
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setIsAuthenticated(true);
+        try {
+          const adminDocRef = doc(db, 'admin', 'adminacc');
+          const adminDoc = await getDoc(adminDocRef);
+          const adminData = adminDoc.data();
 
+          const emails = Object.values(adminData || {});
+          const isAdminUser = emails.includes(user.email);
+          setIsAdmin(isAdminUser);
+        } catch (error) {
+          console.error('Lỗi kiểm tra quyền admin:', error);
+        }
+      } else {
+        setIsAuthenticated(false);
+        setLoading(false);
+        navigation.navigate('LoginScreen');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigation]);
   useFocusEffect(
     React.useCallback(() => {
       const user = auth.currentUser;
@@ -195,11 +224,16 @@ const Header = (props) => {
         {!isExpanded && (
           <View style={styles.rightContainer}>
             {rightComponent}
-
-            <TouchableOpacity style={styles.orderHistoryButton} onPress={handleOrderHistoryPress}>
-              <Text style={styles.orderHistoryText}>Lịch sử</Text>
+            {!isAdmin && 
+              <TouchableOpacity style={styles.orderHistoryButton} onPress={handleOrderHistoryPress}>
+                <Text style={styles.orderHistoryText}>Lịch sử</Text>
+              </TouchableOpacity>
+            }
+            {isAdmin &&
+              <TouchableOpacity style={styles.orderHistoryButton} onPress={() => navigation.navigate('OrderManagementScreen')}>
+              <Text style={styles.orderHistoryText}>Đơn hàng</Text>
             </TouchableOpacity>
-
+            }
             <TouchableOpacity style={styles.cartIconContainer} onPress={() => navigation.navigate('ProductCartScreen')}>
               <Image source={require('../../assets/images/cart.png')} style={styles.cartIcon} />
               {cartItemCount > 0 && (

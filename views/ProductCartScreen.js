@@ -1,5 +1,14 @@
-import React from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+  Modal,
+} from 'react-native';
 import Header from '../components/common/Header';
 import { useCart } from '../context/CartProvider';
 import { handleCheckout } from './OrderService';
@@ -7,16 +16,21 @@ import { handleCheckout } from './OrderService';
 const ProductCartScreen = () => {
   const { cartItems, increment, decrement, removeItem, setCartItems } = useCart();
 
-  console.log('Cart Items:', cartItems); 
+  const [modalVisible, setModalVisible] = useState(false);
+  const [customerInfo, setCustomerInfo] = useState({
+    name: '',
+    phone: '',
+    address: '',
+  });
 
-  const totalCartItems = cartItems.reduce((total, item) => total + item.quantity, 0);
   const totalPrice = cartItems.reduce((total, item) => total + (item.price || 0) * item.quantity, 0);
 
-  const onCheckout = async () => {
+  const onConfirmCheckout = async () => {
     try {
-      const success = await handleCheckout(cartItems);
+      const success = await handleCheckout(cartItems, customerInfo);
       if (success) {
-        setCartItems([]); // Clear cart if checkout is successful
+        setCartItems([]);
+        setModalVisible(false);
       } else {
         alert('Checkout failed. Please try again.');
       }
@@ -58,17 +72,58 @@ const ProductCartScreen = () => {
           <FlatList
             data={cartItems}
             renderItem={renderItem}
-            keyExtractor={(item) => item.id || Math.random().toString()} // Fallback for missing id
+            keyExtractor={(item) => item.id || Math.random().toString()}
             contentContainerStyle={styles.listContainer}
           />
           <View style={styles.footer}>
             <Text style={styles.totalText}>Tổng cộng: {totalPrice.toLocaleString()}₫</Text>
-            <TouchableOpacity style={styles.checkoutButton} onPress={onCheckout}>
+            <TouchableOpacity style={styles.checkoutButton} onPress={() => setModalVisible(true)}>
               <Text style={styles.checkoutButtonText}>Thanh toán</Text>
             </TouchableOpacity>
           </View>
         </>
       )}
+
+      {/* Modal nhập thông tin */}
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Thông tin người nhận</Text>
+            <TextInput
+              placeholder="Họ tên"
+              style={styles.input}
+              value={customerInfo.name}
+              onChangeText={(text) => setCustomerInfo({ ...customerInfo, name: text })}
+            />
+            <TextInput
+              placeholder="Số điện thoại"
+              keyboardType="phone-pad"
+              style={styles.input}
+              value={customerInfo.phone}
+              onChangeText={(text) => setCustomerInfo({ ...customerInfo, phone: text })}
+            />
+            <TextInput
+              placeholder="Địa chỉ"
+              style={styles.input}
+              value={customerInfo.address}
+              onChangeText={(text) => setCustomerInfo({ ...customerInfo, address: text })}
+            />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={[styles.modalButton, { backgroundColor: '#ccc' }]}>
+                <Text>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={onConfirmCheckout} style={styles.modalButton}>
+                <Text style={{ color: '#fff' }}>Xác nhận</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -174,6 +229,38 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    width: '85%',
+    borderRadius: 10,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    padding: 10,
+    marginBottom: 10,
+  },
+  modalButton: {
+    backgroundColor: '#8B4513',
+    padding: 10,
+    borderRadius: 6,
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 5,
   },
 });
 

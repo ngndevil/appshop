@@ -1,15 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+} from 'react-native';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../constants/firebaseConfig';
 import { getAuth } from 'firebase/auth';
 import Header from '../components/common/Header';
+import { useNavigation } from '@react-navigation/native';
 
 const OrderHistoryScreen = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const auth = getAuth();
   const user = auth.currentUser;
+  const navigation = useNavigation();
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -34,22 +43,26 @@ const OrderHistoryScreen = () => {
   }, [user]);
 
   const renderOrderItem = ({ item }) => (
-    <View style={styles.orderContainer}>
-      <Text style={styles.orderId}>Mã đơn hàng: {item.id}</Text>
-      <Text style={styles.orderDate}>Ngày đặt: {new Date(item.createdAt).toLocaleString()}</Text>
-      <Text style={styles.orderTotal}>Tổng cộng: {(item.total || 0).toLocaleString()}₫</Text>
-      <Text style={styles.orderItemsTitle}>Sản phẩm:</Text>
-      {item.items.map((product, index) => (
-        <View key={index} style={styles.orderItem}>
-          <Text style={styles.orderItemName}>
-            {product.product_name || product.title} (x{product.quantity})
-          </Text>
-          <Text style={styles.orderItemPrice}>
-            {(product.price * product.quantity).toLocaleString()}₫
-          </Text>
-        </View>
-      ))}
-    </View>
+    <TouchableOpacity onPress={() => navigation.navigate('OrderStatus', { order: item })}>
+      <View style={styles.orderContainer}>
+        <Text style={styles.orderId}>Mã đơn hàng: {item.id}</Text>
+        <Text style={styles.orderDate}>Ngày đặt: {new Date(item.createdAt).toLocaleString()}</Text>
+        <Text style={styles.orderTotal}>
+          Tổng cộng: {(item.total || 0).toLocaleString()}₫
+        </Text>
+        <Text style={styles.orderItemsTitle}>Sản phẩm:</Text>
+        {item.items.map((product, index) => (
+          <View key={index} style={styles.orderItem}>
+            <Text style={styles.orderItemName}>
+              {product.product_name || product.title} (x{product.quantity})
+            </Text>
+            <Text style={styles.orderItemPrice}>
+              {(product.price * product.quantity).toLocaleString()}₫
+            </Text>
+          </View>
+        ))}
+      </View>
+    </TouchableOpacity>
   );
 
   if (loading) {
