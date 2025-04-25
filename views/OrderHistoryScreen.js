@@ -27,10 +27,12 @@ const OrderHistoryScreen = () => {
       try {
         const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
         const querySnapshot = await getDocs(q);
-        const orderList = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const orderList = querySnapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sắp xếp theo ngày mới nhất
         setOrders(orderList);
       } catch (error) {
         console.error('Error fetching orders:', error);
@@ -46,7 +48,9 @@ const OrderHistoryScreen = () => {
     <TouchableOpacity onPress={() => navigation.navigate('OrderStatus', { order: item })}>
       <View style={styles.orderContainer}>
         <Text style={styles.orderId}>Mã đơn hàng: {item.id}</Text>
-        <Text style={styles.orderDate}>Ngày đặt: {new Date(item.createdAt).toLocaleString()}</Text>
+        <Text style={styles.orderDate}>
+          Ngày đặt: {new Date(item.createdAt).toLocaleString()}
+        </Text>
         <Text style={styles.orderTotal}>
           Tổng cộng: {(item.total || 0).toLocaleString()}₫
         </Text>

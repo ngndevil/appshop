@@ -21,23 +21,26 @@ const OrderStatusScreen = ({ route }) => {
     return timestamp ? new Date(timestamp).toLocaleString() : 'Chưa cập nhật';
   };
 
-  const mainProduct = order.items?.[0];
-
   return (
     <View style={styles.screen}>
       <Header title="Theo dõi đơn hàng" showBackButton />
-
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Sản phẩm chính */}
-        <View style={styles.productCard}>
-          <Image source={{ uri: mainProduct?.image }} style={styles.image} />
-          <View style={styles.productInfo}>
-            <Text style={styles.name}>{mainProduct?.product_name || 'Sản phẩm'}</Text>
-            <Text style={styles.details}>
-              Size: {mainProduct?.size || 'M'} | SL: {mainProduct?.quantity}
-            </Text>
-            <Text style={styles.price}>{(order.total || 0).toLocaleString()}₫</Text>
-          </View>
+
+        {/* Danh sách sản phẩm trong đơn hàng */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Sản phẩm đã đặt</Text>
+          {order.items?.map((item, index) => (
+            <View key={index} style={styles.productCard}>
+              <Image source={{ uri: item.image }} style={styles.image} />
+              <View style={styles.productInfo}>
+                <Text style={styles.name}>{item.product_name || 'Sản phẩm'}</Text>
+                <Text style={styles.details}>
+                  Size: {item.size || 'M'} | SL: {item.quantity}
+                </Text>
+                <Text style={styles.price}>{(item.price * item.quantity).toLocaleString()}₫</Text>
+              </View>
+            </View>
+          ))}
         </View>
 
         {/* Chi tiết đơn hàng */}
@@ -50,6 +53,10 @@ const OrderStatusScreen = ({ route }) => {
           <View style={styles.rowBetween}>
             <Text style={styles.label}>Mã theo dõi:</Text>
             <Text style={[styles.value, styles.bold]}>{order.trackingId || 'Không có'}</Text>
+          </View>
+          <View style={styles.rowBetween}>
+            <Text style={styles.label}>Tổng cộng:</Text>
+            <Text style={[styles.value, styles.bold]}>{(order.total || 0).toLocaleString()}₫</Text>
           </View>
         </View>
 
@@ -100,7 +107,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
     borderRadius: 10,
     padding: 12,
-    marginBottom: 20,
+    marginBottom: 12,
     alignItems: 'center',
     elevation: 1,
   },
@@ -109,6 +116,7 @@ const styles = StyleSheet.create({
     height: width * 0.22,
     borderRadius: 8,
     resizeMode: 'cover',
+    backgroundColor: '#eee',
   },
   productInfo: {
     flex: 1,

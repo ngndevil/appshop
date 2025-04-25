@@ -7,18 +7,23 @@ import {
   StyleSheet,
   Alert,
   Dimensions,
+  TouchableOpacity,
 } from 'react-native';
 import Header from '../components/common/Header';
 import SlideButton from 'rn-slide-button';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../constants/firebaseConfig';
+import { handleCancelOrder } from './handleCancelOrder'; // ✅ Import mới
 
 const screenHeight = Dimensions.get('window').height;
 
-const OrderTrackingScreen = ({ route }) => {
+const OrderTrackingScreen = ({ route, navigation }) => {
   const { order } = route.params;
   const [status, setStatus] = useState(order.status || 'pending');
-  const [confirmed, setConfirmed] = useState(order.status === 'processing' || order.status === 'shipped' || order.status === 'delivered');
+  const [confirmed, setConfirmed] = useState(
+    order.status === 'processing' || order.status === 'shipped' || order.status === 'delivered'
+  );
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const formatDate = (createdAt) => {
     try {
@@ -47,6 +52,32 @@ const OrderTrackingScreen = ({ route }) => {
     }
   };
 
+  const cancelOrder = () => {
+    Alert.alert(
+      '❗ Xác nhận',
+      'Bạn có chắc chắn muốn hủy đơn hàng này không?',
+      [
+        { text: 'Không', style: 'cancel' },
+        {
+          text: 'Có',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsCancelling(true);
+              await handleCancelOrder(order.id, order.items); // ✅ Gọi hàm hủy mới
+              navigation.goBack();
+            } catch (error) {
+              console.error('Cancel error:', error);
+              // Alert đã hiển thị sẵn trong handleCancelOrder
+            } finally {
+              setIsCancelling(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const getStatusLabel = (statusValue) => {
     switch (statusValue) {
       case 'pending':
@@ -57,6 +88,8 @@ const OrderTrackingScreen = ({ route }) => {
         return 'Đang vận chuyển';
       case 'delivered':
         return 'Đã giao hàng';
+      case 'cancelled':
+        return 'Đã hủy';
       default:
         return 'Không xác định';
     }
@@ -102,6 +135,12 @@ const OrderTrackingScreen = ({ route }) => {
 
       {!confirmed && (
         <View style={styles.slideWrapper}>
+          {!isCancelling && (
+            <TouchableOpacity onPress={cancelOrder} style={styles.cancelButton}>
+              <Text style={styles.cancelText}>❌ Hủy đơn hàng</Text>
+            </TouchableOpacity>
+          )}
+
           <SlideButton
             width="90%"
             height={56}
@@ -128,7 +167,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   sectionTitle: {
     fontWeight: 'bold',
@@ -185,6 +224,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#d2b48c',
     borderRadius: 28,
     elevation: 3,
+  },
+  cancelButton: {
+    marginBottom: 12,
+    backgroundColor: '#d9534f',
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+  },
+  cancelText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
   statusButtons: {
     flexDirection: 'row',

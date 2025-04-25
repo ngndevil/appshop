@@ -1,9 +1,5 @@
 import { db } from "../constants/firebaseConfig";
-import {
-  collection,
-  doc,
-  runTransaction,
-} from "firebase/firestore";
+import { collection, doc, runTransaction } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { Alert } from "react-native";
 
@@ -28,9 +24,14 @@ export const handleCheckout = async (cartItems, customerInfo) => {
   }
 
   try {
+    const ordersCollection = collection(db, "orders");
+    const newOrderRef = doc(ordersCollection); // tạo ref cho đơn hàng mới
+
     await runTransaction(db, async (transaction) => {
       let totalPrice = 0;
+      const validatedItems = [];
 
+      // ✅ BƯỚC 1: ĐỌC dữ liệu tất cả sản phẩm
       for (const item of cartItems) {
         const productRef = doc(db, "product", item.id);
         const productSnap = await transaction.get(productRef);
@@ -46,10 +47,19 @@ export const handleCheckout = async (cartItems, customerInfo) => {
           throw new Error(`Sản phẩm "${item.product_name}" chỉ còn ${stock} trong kho.`);
         }
 
+        validatedItems.push({
+          ...item,
+          productRef,
+          stock,
+        });
+      }
+
+      // ✅ BƯỚC 2: GHI dữ liệu (cập nhật tồn kho và tạo đơn hàng)
+      for (const item of validatedItems) {
         totalPrice += (item.price || 0) * item.quantity;
 
-        transaction.update(productRef, {
-          stock: stock - item.quantity,
+        transaction.update(item.productRef, {
+          stock: item.stock - item.quantity,
         });
       }
 
@@ -61,10 +71,10 @@ export const handleCheckout = async (cartItems, customerInfo) => {
         customerName: name,
         customerAddress: address,
         customerPhone: phone,
-        status: 'pending',
+        status: "pending",
       };
 
-      await transaction.set(doc(collection(db, "orders")), order);
+      transaction.set(newOrderRef, order);
     });
 
     Alert.alert("Thanh toán thành công", "Đơn hàng đã được xử lý.");
