@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity,
-  Alert, StyleSheet, Pressable
+  StyleSheet, Pressable, Modal
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useCart } from '../context/CartProvider';
@@ -13,6 +14,8 @@ export default function ProductDetailScreen({ route }) {
   const navigation = useNavigation();
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   if (!product) {
     return (
@@ -23,9 +26,17 @@ export default function ProductDetailScreen({ route }) {
     );
   }
 
+  const showToast = (message) => {
+    setToastMessage(message);
+    setToastVisible(true);
+    setTimeout(() => {
+      setToastVisible(false);
+    }, 1000); // Dismiss after 1 second
+  };
+
   const handleAddToCart = () => {
     if (!product || !product.id) {
-      Alert.alert('Lỗi', 'Không thể thêm sản phẩm vào giỏ hàng. Vui lòng thử lại.');
+      showToast('Không thể thêm sản phẩm vào giỏ hàng. Vui lòng thử lại.');
       return;
     }
 
@@ -36,108 +47,113 @@ export default function ProductDetailScreen({ route }) {
 
     console.log('Adding to cart:', cartItem);
     addToCart(cartItem);
-    Alert.alert('Thành công', `Đã thêm ${quantity} sản phẩm vào giỏ hàng`);
+    showToast(`Đã thêm ${quantity} sản phẩm vào giỏ hàng`);
   };
 
   const handleBuyNow = () => {
-    Alert.alert('Mua ngay', 'Chức năng này sẽ được thêm trong tương lai');
+    showToast('Chức năng này sẽ được thêm trong tương lai');
   };
 
   return (
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
       <View style={styles.container}>
-      <Header title="Chi tiết sản phẩm" showBackButton={true} />
-      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
-        <Image
-          source={{ uri: product.image_url }}
-          style={styles.productImage}
-          
-        />
-        <View style={styles.infoContainer}>
-          <Text style={styles.productName}>{product.product_name}</Text>
-          <Text style={styles.productPrice}>{(product.price || 0).toLocaleString()}₫</Text>
-        </View>
-
-        {/* Quantity Selector */}
-        <View style={styles.quantityContainer}>
-          <Text style={styles.quantityLabel}>Số lượng:</Text>
-          <View style={styles.quantitySelector}>
-            <Pressable
-              onPress={() => quantity > 1 && setQuantity(quantity - 1)}
-              style={({ pressed }) => [
-                styles.quantityIconButton,
-                pressed && styles.quantityIconButtonPressed,
-              ]}
-            >
-              <Ionicons name="remove-circle-outline" size={30} color="#FF5722" />
-            </Pressable>
-            <Text style={styles.quantityText}>{quantity}</Text>
-            <Pressable
-              onPress={() => quantity < (product.stock || 10) && setQuantity(quantity + 1)}
-              style={({ pressed }) => [
-                styles.quantityIconButton,
-                pressed && styles.quantityIconButtonPressed,
-              ]}
-            >
-              <Ionicons name="add-circle-outline" size={30} color="#FF5722" />
-            </Pressable>
+        <Header title="Chi tiết sản phẩm" showBackButton={true} />
+        <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
+          <Image
+            source={{ uri: product.image_url }}
+            style={styles.productImage}
+          />
+          <View style={styles.infoContainer}>
+            <Text style={styles.productName}>{product.product_name}</Text>
+            <Text style={styles.productPrice}>{(product.price || 0).toLocaleString()}₫</Text>
           </View>
-        </View>
-      </ScrollView>
 
-      {/* Bottom Action Bar */}
-      <View style={styles.actionBar}>
-        <TouchableOpacity
-          style={styles.addToCartButton}
-          onPress={handleAddToCart}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.actionButtonText}>Thêm vào giỏ</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.buyNowButton}
-          onPress={handleBuyNow}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.actionButtonText}>Mua ngay</Text>
-        </TouchableOpacity>
+          {/* Quantity Selector */}
+          <View style={styles.quantityContainer}>
+            <Text style={styles.quantityLabel}>Số lượng:</Text>
+            <View style={styles.quantitySelector}>
+              <Pressable
+                onPress={() => quantity > 1 && setQuantity(quantity - 1)}
+                style={({ pressed }) => [
+                  styles.quantityIconButton,
+                  pressed && styles.quantityIconButtonPressed,
+                ]}
+              >
+                <Ionicons name="remove-circle-outline" size={30} color="#FF5722" />
+              </Pressable>
+              <Text style={styles.quantityText}>{quantity}</Text>
+              <Pressable
+                onPress={() => quantity < (product.stock || 10) && setQuantity(quantity + 1)}
+                style={({ pressed }) => [
+                  styles.quantityIconButton,
+                  pressed && styles.quantityIconButtonPressed,
+                ]}
+              >
+                <Ionicons name="add-circle-outline" size={30} color="#FF5722" />
+              </Pressable>
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Bottom Action Bar */}
+        <View style={styles.actionBar}>
+          <TouchableOpacity
+            style={styles.addToCartButton}
+            onPress={handleAddToCart}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.actionButtonText}>Thêm vào giỏ</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.buyNowButton}
+            onPress={handleBuyNow}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.actionButtonText}>Mua ngay</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Toast Message */}
+        {toastVisible && (
+          <View style={styles.toast}>
+            <Text style={styles.toastText}>{toastMessage}</Text>
+          </View>
+        )}
       </View>
-    </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  //ScrollView Styles
+  // ScrollView Styles
   scrollView: {
     flex: 1,
-    backgroundColor: '#F5F5F5', // Màu nền nhẹ để tạo độ tương phản
+    backgroundColor: '#F5F5F5', // Light background for contrast
     paddingTop: 20,
-    paddingBottom: 20, // Để tránh bị che bởi action bar
+    paddingBottom: 20, // Avoid being covered by the action bar
   },
   // Container Styles
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5', // Màu nền nhẹ để tạo độ tương phản
+    backgroundColor: '#F5F5F5', // Light background for contrast
   },
   scrollContainer: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 20, // Để tránh bị che bởi action bar
+    paddingBottom: 20, // Avoid being covered by the action bar
   },
-
 
   // Image Styles
   productImage: {
     alignSelf: 'center',
     marginTop: 20,
     width: '80%',
-    height: 350, // Tăng chiều cao để ảnh nổi bật hơn
-    resizeMode: 'cover', // Đổi sang cover để ảnh không bị méo
+    height: 350, // Increased height for better prominence
+    resizeMode: 'cover', // Prevent image distortion
     borderBottomLeftRadius: 16,
     borderBottomRightRadius: 16,
-    backgroundColor: '#E0E0E0', // Placeholder background khi ảnh đang tải
+    backgroundColor: '#E0E0E0', // Placeholder background while loading
   },
 
   // Info Section Styles
@@ -145,7 +161,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     marginHorizontal: 16,
-    marginTop: -20, // Đè lên phần ảnh để tạo hiệu ứng overlap
+    marginTop: -20, // Overlap effect on the image
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -153,15 +169,15 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   productName: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '700',
     color: '#1A1A1A',
     marginBottom: 10,
   },
   productPrice: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '600',
-    color: '#FF5722',
+    color: '#8B4513', // Updated color for better aesthetics
     marginBottom: 12,
   },
 
@@ -232,12 +248,12 @@ const styles = StyleSheet.create({
   },
   addToCartButton: {
     flex: 1,
-    backgroundColor: '#FF5722',
+    backgroundColor: '#8B4513', // Updated to SaddleBrown
     paddingVertical: 16,
     borderRadius: 10,
     alignItems: 'center',
     marginRight: 8,
-    shadowColor: '#FF5722',
+    shadowColor: '#8B4513',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
@@ -245,12 +261,12 @@ const styles = StyleSheet.create({
   },
   buyNowButton: {
     flex: 1,
-    backgroundColor: '#4CAF50',
+    backgroundColor: 'gray', // Updated to a rich brown color
     paddingVertical: 16,
     borderRadius: 10,
     alignItems: 'center',
     marginLeft: 8,
-    shadowColor: '#4CAF50',
+    shadowColor: 'gary',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
@@ -265,8 +281,31 @@ const styles = StyleSheet.create({
   // Error Text Style
   errorText: {
     fontSize: 18,
-    color: '#666',
+    color: 'white',
     textAlign: 'center',
     marginTop: 20,
   },
+  // Toast Styles
+toast: {
+  position: 'absolute',
+  top: '50%', 
+  left: '25%', 
+  transform: [{ translateX: -50 }, { translateY: -50 }],
+  backgroundColor: 'gray', 
+  padding: 16,
+  borderRadius: 8,
+  alignItems: 'center',
+  justifyContent: 'center',
+  shadowColor: 'gray', 
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.5,
+  shadowRadius: 4,
+  elevation: 5,
+},
+toastText: {
+  color: '#FFF', 
+  fontSize: 16,
+  fontWeight: '600',
+},
 });
+

@@ -315,28 +315,37 @@ const ProductCartScreen = () => {
     }
   };
 
-  const renderItem = ({ item }) => (
-    <View style={styles.itemContainer}>
-      <Image source={{ uri: item.image_url || item.image }} style={styles.image} />
-      <View style={styles.details}>
-        <Text style={styles.name}>{item.name || item.title || item.product_name}</Text>
-        <Text style={styles.price}>{(item.price || 0).toLocaleString()}₫</Text>
-        <View style={styles.quantityContainer}>
-          <TouchableOpacity onPress={() => decrement(item.id)} style={styles.button}>
-            <Text style={styles.buttonText}>-</Text>
-          </TouchableOpacity>
-          <Text style={styles.quantity}>{item.quantity}</Text>
-          <TouchableOpacity onPress={() => increment(item.id)} style={styles.button}>
-            <Text style={styles.buttonText}>+</Text>
-          </TouchableOpacity>
+  const renderItem = ({ item }) => {
+    const itemTotal = (item.price || 0) * item.quantity;
+    
+    return (
+      <View style={styles.itemContainer}>
+        <Image source={{ uri: item.image_url || item.image }} style={styles.image} />
+        <View style={styles.details}>
+          <Text style={styles.name}>{item.name || item.title || item.product_name}</Text>
+          <Text style={styles.price}>Giá: {(item.price || 0).toLocaleString()}₫</Text>
+  
+          <View style={styles.quantityContainer}>
+            <TouchableOpacity onPress={() => decrement(item.id)} style={styles.button}>
+              <Text style={styles.buttonText}>-</Text>
+            </TouchableOpacity>
+            <Text style={styles.quantity}>{item.quantity}</Text>
+            <TouchableOpacity onPress={() => increment(item.id)} style={styles.button}>
+              <Text style={styles.buttonText}>+</Text>
+            </TouchableOpacity>
+          </View>
+  
+          {/* Thêm dòng này để hiện thành tiền */}
+          <Text style={styles.itemTotalText}>Thành tiền: {itemTotal.toLocaleString()}₫</Text>
         </View>
+  
+        <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.removeButton}>
+          <Text style={styles.removeButtonText}>Xóa</Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.removeButton}>
-        <Text style={styles.removeButtonText}>Xóa</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
+    );
+  };
+  
   return (
     <View style={styles.container}>
       <Header title="Giỏ hàng" showBackButton={true} />
@@ -411,6 +420,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  
   },
   listContainer: {
     paddingHorizontal: 12,
@@ -437,7 +447,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   name: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
   },
   price: {
@@ -497,7 +507,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   totalText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   checkoutButton: {
@@ -543,6 +553,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 5,
   },
+  itemTotalText: {
+    marginTop: 4,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+  },
+  
 });
 
 export default ProductCartScreen;
