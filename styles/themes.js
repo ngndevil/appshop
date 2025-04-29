@@ -38,9 +38,9 @@ export const defaultTheme = {
   // Dark Theme
   export const darkTheme = {
     // Main colors
-    primary: '#BB86FC', // Purple
-    primaryLight: '#BB86FC',
-    primaryLighter: '#2C2C2C',
+    primary: '#996bd1', // Purple
+    primaryLight: '#c29fed',
+    primaryLighter: '#ebcb6c',
     primaryLightest: '#3A3A3A',
     
     // Background colors
@@ -75,15 +75,15 @@ export const defaultTheme = {
   // Pink Theme
   export const pinkTheme = {
     // Main colors
-    primary: '#E91E63', // Pink
-    primaryLight: '#F48FB1',
-    primaryLighter: '#FCE4EC',
-    primaryLightest: '#FFEDF3',
+    primary: '#fa9da9', // Deep teal
+    primaryLight: '#098573', // Medium teal
+    primaryLighter: '#93CDCE', // NEW: Light teal-pink blend (sáng)
+    primaryLightest: '#ffbdd5', // Soft pink
     
     // Background colors
-    background: '#FFF5F8',
-    card: '#FFFFFF',
-    
+    background: '#fad3d8', // Light pink
+    card: '#edfcf9', // Keeping white for better readability
+  
     // Text colors
     text: '#333333',
     textSecondary: '#666666',
@@ -95,7 +95,7 @@ export const defaultTheme = {
     warning: '#FFC107',
     info: '#2196F3',
     disabled: '#cccccc',
-    highlight: '#C2185B',
+    highlight: '#066255', // Using medium teal for highlight
     
     // Sale colors
     sale: '#E53935',
@@ -105,21 +105,21 @@ export const defaultTheme = {
     overlay: 'rgba(0, 0, 0, 0.5)',
     overlayLight: 'rgba(0, 0, 0, 0.2)',
     transparent: 'transparent',
-    border: '#FFD6E7',
+    border: '#e090ad', // Using soft pink for border
     shadow: '#000000',
   };
   
   // Red Theme
   export const redTheme = {
     // Main colors
-    primary: '#D32F2F', // Red
-    primaryLight: '#EF5350',
-    primaryLighter: '#FFEBEE',
-    primaryLightest: '#FFF5F5',
+    primary: '#ff5029', // Deep orange/brown
+    primaryLight: '#e06504',
+    primaryLighter: '#f38705',
+    primaryLightest: '#ffba91',
     
     // Background colors
-    background: '#FFF8F8',
-    card: '#FFFFFF',
+    background: '#ffa875',
+    card: '#ffffff',
     
     // Text colors
     text: '#333333',
@@ -132,36 +132,36 @@ export const defaultTheme = {
     warning: '#FFC107',
     info: '#2196F3',
     disabled: '#cccccc',
-    highlight: '#B71C1C',
+    highlight: '#712504',
     
     // Sale colors
-    sale: '#E53935',
-    saleLight: '#FFEBEE',
+    sale: '#aa4404',
+    saleLight: '#FFF0E6',
     
     // Others
     overlay: 'rgba(0, 0, 0, 0.5)',
     overlayLight: 'rgba(0, 0, 0, 0.2)',
     transparent: 'transparent',
-    border: '#FFCDD2',
+    border: '#FFD9C2',
     shadow: '#000000',
   };
   
   // Blue Theme
   export const blueTheme = {
     // Main colors
-    primary: '#1976D2', // Blue
-    primaryLight: '#64B5F6',
-    primaryLighter: '#E3F2FD',
-    primaryLightest: '#F5FBFF',
+    primary: '#0b6499', // Blue
+    primaryLight: '#28666e',
+    primaryLighter: '#7c9885',
+    primaryLightest: '#b5b682',
     
     // Background colors
-    background: '#F5F9FF',
-    card: '#FFFFFF',
+    background: '#b5b682',
+    card: '#fedc97',
     
     // Text colors
-    text: '#333333',
-    textSecondary: '#666666',
-    textLight: '#999999',
+    text: '##000000',
+    textSecondary: '#0b0e0f',
+    textLight: '#383234',
     
     // Status colors
     success: '#4CAF50',

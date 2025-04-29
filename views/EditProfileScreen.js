@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,91 +7,148 @@ import {
   StyleSheet,
   Image,
   Alert,
-  Modal,
-  TouchableWithoutFeedback,
-  Animated,
+  ScrollView,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Dimensions,
+  StatusBar,
 } from 'react-native';
 import { getAuth, updateProfile, signOut } from 'firebase/auth';
-import { doc, setDoc, getFirestore } from 'firebase/firestore';
+import { doc, setDoc, getFirestore, getDoc } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import SimpleHeader from '../components/common/SimpleHeader';
-import { useTheme, themes } from '../context/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
+import ThemeSelector from '../components/dropdown/ThemeSelector';
 
 const IMGUR_CLIENT_ID = '41e2797d57ce1a3';
 const { width } = Dimensions.get('window');
 
 const EditProfileScreen = () => {
+  // Base state
   const auth = getAuth();
+  const db = getFirestore();
   const user = auth.currentUser;
   const navigation = useNavigation();
+  const { colors } = useTheme();
+  
+  // Form state
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [photoURL, setPhotoURL] = useState(user?.photoURL || null);
+  const [email, setEmail] = useState(user?.email || '');
+  const [originalName, setOriginalName] = useState(user?.displayName || '');
+  const [originalPhotoURL, setOriginalPhotoURL] = useState(user?.photoURL || null);
+  
+  // UI state
   const [isUploading, setIsUploading] = useState(false);
-  const [themeModalVisible, setThemeModalVisible] = useState(false);
-  
-  // Use theme from context
-  const { colors, changeTheme, currentTheme } = useTheme();
-  
-  // Animation for theme dropdown
-  const dropdownAnimation = useRef(new Animated.Value(0)).current;
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const toggleThemeModal = () => {
-    if (themeModalVisible) {
-      // Close animation
-      Animated.timing(dropdownAnimation, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: false,
-      }).start(() => setThemeModalVisible(false));
-    } else {
-      // Open animation
-      setThemeModalVisible(true);
-      Animated.timing(dropdownAnimation, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
-    }
-  };
-  
-  // Calculate dropdown height based on animation value
-  const maxHeight = 250;
-  const dropdownHeight = dropdownAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, maxHeight],
-  });
+  // Load user data
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        if (user) {
+          // Check if additional user data exists in Firestore
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setDisplayName(userData.displayName || user.displayName || '');
+            setPhotoURL(userData.photoURL || user.photoURL || null);
+            setOriginalName(userData.displayName || user.displayName || '');
+            setOriginalPhotoURL(userData.photoURL || user.photoURL || null);
+          } else {
+            setDisplayName(user.displayName || '');
+            setPhotoURL(user.photoURL || null);
+            setOriginalName(user.displayName || '');
+            setOriginalPhotoURL(user.photoURL || null);
+          }
+          setEmail(user.email || '');
+        }
+      } catch (error) {
+        console.error("Error loading user data:", error);
+        Alert.alert("Lỗi", "Không thể tải dữ liệu người dùng. Vui lòng thử lại sau.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
+    loadUserData();
+  }, [user]);
+
+  // Track if form has changes
+  useEffect(() => {
+    const nameChanged = displayName !== originalName;
+    const photoChanged = photoURL !== originalPhotoURL;
+    setHasChanges(nameChanged || photoChanged);
+  }, [displayName, photoURL, originalName, originalPhotoURL]);
+
+  // Image handling
   const handlePickImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
-      Alert.alert('Quyền bị từ chối', 'Bạn cần cấp quyền truy cập thư viện ảnh.');
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Quyền bị từ chối', 'Bạn cần cấp quyền truy cập thư viện ảnh để thay đổi ảnh đại diện.');
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
 
-    if (!result.canceled) {
-      setPhotoURL(result.assets[0].uri);
+      if (!result.canceled && result.assets && result.assets[0]) {
+        setPhotoURL(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Lỗi", "Không thể chọn ảnh. Vui lòng thử lại.");
     }
   };
 
-  // Existing upload function
-  const uploadImageToImgur = async (imageUri) => {
-    // ... existing code
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Quyền bị từ chối', 'Bạn cần cấp quyền sử dụng máy ảnh để chụp ảnh đại diện mới.');
+      return;
+    }
+
     try {
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        setPhotoURL(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Error taking photo:", error);
+      Alert.alert("Lỗi", "Không thể chụp ảnh. Vui lòng thử lại.");
+    }
+  };
+
+  // Upload photo to Imgur
+  const uploadImageToImgur = async (imageUri) => {
+    try {
+      // Read image as base64
+      setUploadProgress(10);
       const base64 = await FileSystem.readAsStringAsync(imageUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
-
+      
+      setUploadProgress(30);
+      
+      // Upload to Imgur
       const response = await fetch('https://api.imgur.com/3/image', {
         method: 'POST',
         headers: {
@@ -103,9 +160,16 @@ const EditProfileScreen = () => {
           type: 'base64',
         }),
       });
-
+      
+      setUploadProgress(80);
+      
       const data = await response.json();
-      if (!data.success) throw new Error('Tải ảnh lên Imgur thất bại');
+      
+      if (!data.success) {
+        throw new Error(data.data.error || 'Không thể tải ảnh lên');
+      }
+      
+      setUploadProgress(100);
       return data.data.link;
     } catch (err) {
       console.error('Upload error:', err);
@@ -113,312 +177,402 @@ const EditProfileScreen = () => {
     }
   };
 
+  // Handle save profile changes
   const handleSave = async () => {
-    // ... existing code
+    if (!hasChanges) {
+      Alert.alert('Thông báo', 'Không có thay đổi để lưu.');
+      return;
+    }
+
     try {
       setIsUploading(true);
       let uploadedPhotoURL = photoURL;
 
-      if (photoURL && photoURL.startsWith('file://')) {
+      // If photo is from device (not a URL), upload it
+      if (photoURL && (photoURL.startsWith('file://') || photoURL.startsWith('content://'))) {
         uploadedPhotoURL = await uploadImageToImgur(photoURL);
       }
 
+      // Update Firebase Auth profile
       await updateProfile(user, {
         displayName,
         photoURL: uploadedPhotoURL || null,
       });
 
+      // Update Firestore document
       await setDoc(
-        doc(getFirestore(), 'users', user.uid),
+        doc(db, 'users', user.uid),
         {
           displayName,
           photoURL: uploadedPhotoURL || null,
           email: user.email,
+          updatedAt: new Date().toISOString(),
         },
         { merge: true }
       );
 
-      await auth.currentUser.reload();
-      const updatedUser = auth.currentUser;
-      setDisplayName(updatedUser.displayName || '');
-      setPhotoURL(updatedUser.photoURL || null);
-
-      Alert.alert('Thành công', 'Cập nhật hồ sơ thành công!');
+      // Reload user to get updated info
+      await user.reload();
+      
+      // Update state with new values
+      setOriginalName(displayName);
+      setOriginalPhotoURL(uploadedPhotoURL);
+      setPhotoURL(uploadedPhotoURL);
+      
+      Alert.alert('Thành công', 'Thông tin hồ sơ đã được cập nhật!');
+      setHasChanges(false);
     } catch (error) {
-      Alert.alert('Lỗi', error.message);
+      console.error("Save error:", error);
+      Alert.alert('Lỗi', `Không thể cập nhật hồ sơ: ${error.message}`);
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
+  // Handle delete avatar
   const handleDeleteAvatar = () => {
-    // ... existing code
-    Alert.alert('Xác nhận', 'Bạn có chắc muốn xóa ảnh đại diện?', [
-      {
-        text: 'Hủy',
-        style: 'cancel',
-      },
-      {
-        text: 'Xóa',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await updateProfile(user, {
-              photoURL: null,
-            });
-            await setDoc(
-              doc(getFirestore(), 'users', user.uid),
-              {
+    Alert.alert(
+      'Xác nhận xóa',
+      'Bạn có chắc muốn xóa ảnh đại diện không?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsUploading(true);
+              
+              // Update Firebase Auth profile
+              await updateProfile(user, {
                 photoURL: null,
-              },
-              { merge: true }
-            );
-            await auth.currentUser.reload();
-            setPhotoURL(null);
-            Alert.alert('Đã xóa ảnh đại diện');
-          } catch (error) {
-            Alert.alert('Lỗi khi xóa ảnh', error.message);
-          }
+              });
+
+              // Update Firestore document
+              await setDoc(
+                doc(db, 'users', user.uid),
+                { photoURL: null },
+                { merge: true }
+              );
+
+              // Reload user and update state
+              await user.reload();
+              setPhotoURL(null);
+              setOriginalPhotoURL(null);
+              
+              Alert.alert('Thành công', 'Đã xóa ảnh đại diện!');
+            } catch (error) {
+              console.error("Delete avatar error:", error);
+              Alert.alert('Lỗi', `Không thể xóa ảnh đại diện: ${error.message}`);
+            } finally {
+              setIsUploading(false);
+            }
+          },
         },
-      },
-    ]);
+      ],
+      { cancelable: true }
+    );
   };
 
-  const handleLogout = async () => {
-    // ... existing code
-    try {
-      await signOut(auth);
-      navigation.replace('LoginScreen');
-    } catch (error) {
-      Alert.alert('Lỗi', error.message);
-    }
+  // Handle logout
+  const handleLogout = () => {
+    Alert.alert(
+      'Đăng xuất',
+      'Bạn có chắc muốn đăng xuất khỏi tài khoản?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Đăng xuất',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut(auth);
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'LoginScreen' }],
+              });
+            } catch (error) {
+              console.error("Logout error:", error);
+              Alert.alert('Lỗi', `Không thể đăng xuất: ${error.message}`);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
-  
-  // Theme options
-  const themeOptions = [
-    { id: 'default', name: 'Nâu (Mặc định)', color: themes.default.primary, icon: 'invert-colors' },
-    { id: 'dark', name: 'Tối', color: themes.dark.primary, icon: 'brightness-4' },
-    { id: 'pink', name: 'Hồng', color: themes.pink.primary, icon: 'palette' },
-    { id: 'red', name: 'Đỏ', color: themes.red.primary, icon: 'palette' },
-    { id: 'blue', name: 'Xanh', color: themes.blue.primary, icon: 'palette' },
-  ];
+
+  // If still loading user data
+  if (isLoading) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.text }]}>Đang tải thông tin...</Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.card }]}>
-      <SimpleHeader title="Chỉnh sửa hồ sơ" onBack={() => navigation.goBack()} />
-      <TouchableOpacity onPress={handlePickImage} style={styles.avatarContainer}>
-        <Image
-          source={photoURL ? { uri: photoURL } : require('../assets/images/default-avatar.jpg')}
-          style={[styles.avatar, { borderColor: colors.primary }]}
-        />
-        <Text style={[styles.changePhotoText, { color: colors.primary }]}>Thay đổi ảnh</Text>
-      </TouchableOpacity>
-
-      {photoURL && (
-        <TouchableOpacity onPress={handleDeleteAvatar}>
-          <Text style={[styles.deletePhotoText, { color: colors.error }]}>Xóa ảnh đại diện</Text>
-        </TouchableOpacity>
-      )}
-
-      <TextInput
-        style={[styles.input, { borderColor: colors.border, color: colors.text }]}
-        placeholder="Tên hiển thị"
-        placeholderTextColor={colors.textLight}
-        value={displayName}
-        onChangeText={setDisplayName}
-      />
-
-      {/* Theme Switcher Button */}
-      <TouchableOpacity
-        style={[styles.themeButton, { backgroundColor: colors.primaryLighter }]}
-        onPress={toggleThemeModal}
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+    >
+      <StatusBar barStyle={colors.isDark ? 'light-content' : 'dark-content'} />
+      <ScrollView 
+        style={[styles.container, { backgroundColor: colors.background }]}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
       >
-        <MaterialIcons name="color-lens" size={24} color={colors.primary} style={styles.themeIcon} />
-        <Text style={[styles.themeButtonText, { color: colors.text }]}>
-          Đổi giao diện
-        </Text>
-        <MaterialIcons 
-          name={themeModalVisible ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
-          size={24} 
-          color={colors.primary} 
-        />
-      </TouchableOpacity>
-
-      {/* Theme Modal Dropdown */}
-      {themeModalVisible && (
-        <Animated.View style={[
-          styles.themeModal,
-          { 
-            height: dropdownHeight,
-            backgroundColor: colors.card,
-            borderColor: colors.border,
-          }
-        ]}>
-          <View style={styles.themeOptions}>
-            <Text style={[styles.themeModalTitle, { color: colors.text }]}>Chọn giao diện</Text>
-            {themeOptions.map((theme) => (
-              <TouchableOpacity
-                key={theme.id}
-                style={[
-                  styles.themeOption,
-                  currentTheme === theme.id && {
-                    backgroundColor: colors.primaryLightest,
-                    borderColor: colors.primary,
-                  }
-                ]}
-                onPress={() => {
-                  changeTheme(theme.id);
-                  toggleThemeModal();
-                }}
+        <SimpleHeader title="Chỉnh sửa hồ sơ" onBack={() => navigation.goBack()} />
+        
+        {/* Avatar Section */}
+        <View style={styles.avatarSection}>
+          <View style={styles.avatarContainer}>
+            <Image
+              source={photoURL ? { uri: photoURL } : require('../assets/images/default-avatar.jpg')}
+              style={[styles.avatar, { borderColor: colors.primary }]}
+            />
+            
+            <View style={styles.imageActionButtons}>
+              <TouchableOpacity 
+                style={[styles.imageActionButton, { backgroundColor: colors.primary }]}
+                onPress={handleTakePhoto}
+                disabled={isUploading}
               >
-                <View style={[styles.colorCircle, { backgroundColor: theme.color }]}>
-                  {currentTheme === theme.id && (
-                    <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                  )}
-                </View>
-                <Text style={[styles.themeOptionText, { color: colors.text }]}>{theme.name}</Text>
-                <MaterialIcons name={theme.icon} size={20} color={theme.color} />
+                <FontAwesome5 name="camera" size={16} color={colors.card} />
               </TouchableOpacity>
-            ))}
+              
+              <TouchableOpacity 
+                style={[styles.imageActionButton, { backgroundColor: colors.primary }]}
+                onPress={handlePickImage}
+                disabled={isUploading}
+              >
+                <FontAwesome5 name="image" size={16} color={colors.card} />
+              </TouchableOpacity>
+              
+              {photoURL && (
+                <TouchableOpacity 
+                  style={[styles.imageActionButton, { backgroundColor: colors.error }]}
+                  onPress={handleDeleteAvatar}
+                  disabled={isUploading}
+                >
+                  <FontAwesome5 name="trash" size={16} color={colors.card} />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
-        </Animated.View>
-      )}
+          
+          <Text style={[styles.userEmail, { color: colors.textSecondary }]}>
+            {email}
+          </Text>
+        </View>
 
-      <TouchableOpacity 
-        style={[styles.button, { backgroundColor: colors.primary }]} 
-        onPress={handleSave} 
-        disabled={isUploading}
-      >
-        <Text style={[styles.buttonText, { color: colors.card }]}>
-          {isUploading ? 'Đang lưu...' : 'Lưu'}
-        </Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity
-        style={[styles.button, styles.orderHistoryButton, { backgroundColor: colors.textSecondary }]}
-        onPress={() => navigation.navigate('OrderHistoryScreen')}
-      >
-        <Text style={[styles.buttonText, { color: colors.card }]}>Xem lịch sử đơn hàng</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={[styles.button, styles.logoutButton, { backgroundColor: colors.error }]} 
-        onPress={handleLogout}
-      >
-        <Text style={[styles.buttonText, { color: colors.card }]}>Đăng xuất</Text>
-      </TouchableOpacity>
-    </View>
+        {/* Form Section */}
+        <View style={styles.formSection}>
+          <Text style={[styles.fieldLabel, { color: colors.text }]}>Tên hiển thị</Text>
+          <TextInput
+            style={[
+              styles.textInput,
+              { borderColor: colors.border, color: colors.text, backgroundColor: colors.card }
+            ]}
+            placeholder="Nhập tên hiển thị"
+            placeholderTextColor={colors.textLight}
+            value={displayName}
+            onChangeText={setDisplayName}
+            maxLength={30}
+          />
+
+          {/* Theme Selector Component */}
+          <Text style={[styles.fieldLabel, { color: colors.text, marginTop: 20 }]}>
+            Giao diện ứng dụng
+          </Text>
+          <ThemeSelector />
+
+          {/* Upload Progress Indicator */}
+          {isUploading && uploadProgress > 0 && (
+            <View style={styles.progressContainer}>
+              <View 
+                style={[
+                  styles.progressBar, 
+                  { backgroundColor: colors.border, width: '100%' }
+                ]}
+              >
+                <View 
+                  style={[
+                    styles.progressFill, 
+                    { backgroundColor: colors.primary, width: `${uploadProgress}%` }
+                  ]} 
+                />
+              </View>
+              <Text style={[styles.progressText, { color: colors.textSecondary }]}>
+                {uploadProgress < 100 ? 'Đang tải ảnh lên...' : 'Đã tải xong!'}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={[
+              styles.button, 
+              { backgroundColor: hasChanges ? colors.primary : colors.disabled }
+            ]}
+            onPress={handleSave}
+            disabled={isUploading || !hasChanges}
+          >
+            {isUploading ? (
+              <View style={styles.buttonContent}>
+                <ActivityIndicator size="small" color={colors.card} />
+                <Text style={[styles.buttonText, { color: colors.card, marginLeft: 8 }]}>
+                  Đang lưu...
+                </Text>
+              </View>
+            ) : (
+              <Text style={[styles.buttonText, { color: colors.card }]}>
+                Lưu thay đổi
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: colors.textSecondary }]}
+            onPress={() => navigation.navigate('OrderHistoryScreen')}
+          >
+            <View style={styles.buttonContent}>
+              <MaterialIcons name="history" size={20} color={colors.card} style={styles.buttonIcon} />
+              <Text style={[styles.buttonText, { color: colors.card }]}>
+                Lịch sử đơn hàng
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: colors.error }]}
+            onPress={handleLogout}
+          >
+            <View style={styles.buttonContent}>
+              <MaterialIcons name="logout" size={20} color={colors.card} style={styles.buttonIcon} />
+              <Text style={[styles.buttonText, { color: colors.card }]}>
+                Đăng xuất
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  loadingContainer: {
     flex: 1,
-    padding: 16,
-  },
-  avatarContainer: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderWidth: 1,
-  },
-  changePhotoText: {
-    marginTop: 8,
-    fontSize: 16,
-  },
-  deletePhotoText: {
-    textAlign: 'center',
-    fontSize: 14,
-    marginBottom: 12,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    fontSize: 16,
-  },
-  button: {
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  orderHistoryButton: {
-    marginTop: 8,
-  },
-  logoutButton: {
-    marginTop: 8,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  themeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    justifyContent: 'space-between',
-  },
-  themeIcon: {
-    marginRight: 8,
-  },
-  themeButtonText: {
-    fontSize: 16,
-    flex: 1,
-  },
-  themeModal: {
-    position: 'absolute',
-    top: 280, // Position below the theme button
-    left: 16,
-    right: 16,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    zIndex: 1000,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  themeModalTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    paddingHorizontal: 12,
-  },
-  themeOptions: {
-    padding: 8,
-  },
-  themeOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginVertical: 4,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  colorCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    marginRight: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  themeOptionText: {
-    fontSize: 14,
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+  },
+  container: {
     flex: 1,
+  },
+  contentContainer: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  avatarSection: {
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  avatarContainer: {
+    position: 'relative',
+  },
+  avatar: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    borderWidth: 2,
+  },
+  userEmail: {
+    marginTop: 8,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  imageActionButtons: {
+    position: 'absolute',
+    bottom: -5,
+    right: -5,
+    flexDirection: 'row',
+  },
+  imageActionButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  formSection: {
+    marginVertical: 16,
+  },
+  fieldLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+  },
+  progressContainer: {
+    marginTop: 16,
+  },
+  progressBar: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+  },
+  progressText: {
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  actionButtons: {
+    marginTop: 24,
+  },
+  button: {
+    borderRadius: 8,
+    paddingVertical: 16,
+    marginBottom: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 1,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  buttonIcon: {
+    marginRight: 8,
   },
 });
 

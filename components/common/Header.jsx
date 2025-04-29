@@ -417,12 +417,13 @@ const Header = (props) => {
                   ref={searchInputRef}
                   style={themedStyles.searchInput}
                   placeholder="Tìm kiếm..."
+                  placeholderTextColor={colors.textLight} // Thêm màu cho placeholder theo theme
                   value={query}
                   onChangeText={handleSearch}
                   returnKeyType="search"
                   onSubmitEditing={handlePressSearchButton}
                   autoFocus={true}
-                />
+                  />
                 {query.length > 0 && (
                   <TouchableOpacity style={themedStyles.searchButton} onPress={handlePressSearchButton}>
                     <Text style={themedStyles.searchButtonText}>Tìm</Text>
