@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import { auth } from '../constants/firebaseConfig';
-import { signInWithEmailAndPassword,onAuthStateChanged, signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithEmailAndPassword, onAuthStateChanged, signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
+import { useTheme } from '../context/ThemeContext';
 
-import {  } from 'firebase/auth';
+WebBrowser.maybeCompleteAuthSession();
+
 const LoginScreen = ({ navigation }) => {
+  const { colors } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secureTextEntry, setSecureTextEntry] = useState(true);
@@ -15,7 +18,7 @@ const LoginScreen = ({ navigation }) => {
     clientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',//chưa có cần cập nhật
     redirectUri: 'https://auth.expo.io/clothing_store_app/clothing_store_app',// chưa có cần cập nhật
   });
-  WebBrowser.maybeCompleteAuthSession();
+  
   useEffect(() => {
     if (response?.type === 'success') {
       const { authentication } = response;
@@ -34,7 +37,6 @@ const LoginScreen = ({ navigation }) => {
     }
   }, [response]);
   
-
   const handleLogin = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || !emailRegex.test(email)) {
@@ -69,179 +71,178 @@ const LoginScreen = ({ navigation }) => {
         }
         Alert.alert('Login Failed', errorMessage);
       });
-    
   };
 
+  const themedStyles = StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      backgroundColor: colors.card,
+    },
+    logo: {
+      width: 200,
+      height: 200,
+      resizeMode: 'contain',
+      marginBottom: 20,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: 10,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginBottom: 30,
+    },
+    input: {
+      width: '100%',
+      height: 50,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: 8,
+      paddingHorizontal: 15,
+      marginBottom: 15,
+      fontSize: 16,
+      color: colors.text,
+    },
+    passwordContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: 8,
+      marginBottom: 15,
+    },
+    inputPassword: {
+      flex: 1,
+      height: 50,
+      paddingHorizontal: 15,
+      fontSize: 16,
+      color: colors.text,
+    },
+    eyeIcon: {
+      padding: 10,
+    },
+    forgotPassword: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      textAlign: 'right',
+      marginBottom: 20,
+    },
+    signInButton: {
+      width: '100%',
+      backgroundColor: colors.primary,
+      paddingVertical: 15,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    signInButtonText: {
+      color: colors.card,
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    orText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginBottom: 20,
+    },
+    socialButtons: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginBottom: 20,
+    },
+    socialButton: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      backgroundColor: colors.background,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginHorizontal: 10,
+    },
+    registerLink: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+    },
+    registerText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    registerLinkText: {
+      fontSize: 14,
+      color: colors.primary,
+      fontWeight: 'bold',
+    },
+  });
+
   return (
-    <View style={styles.container}>
-      <Image source={require ('../assets/images/icon.jpg')} style={styles.logo}/>
-      <Text style={styles.title}>Sign In</Text>
-      <Text style={styles.subtitle}>Hi! Welcome back, you’ve been missed</Text>
+    <View style={themedStyles.container}>
+      <Image source={require ('../assets/images/icon.jpg')} style={themedStyles.logo}/>
+      <Text style={themedStyles.title}>Sign In</Text>
+      <Text style={themedStyles.subtitle}>Hi! Welcome back, you've been missed</Text>
       <TextInput
-        style={styles.input}
+        style={themedStyles.input}
         placeholder="Email"
-        placeholderTextColor="#999"
+        placeholderTextColor={colors.textLight}
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
       />
-      <View style={styles.passwordContainer}>
+      <View style={themedStyles.passwordContainer}>
         <TextInput
-          style={styles.inputPassword}
+          style={themedStyles.inputPassword}
           placeholder="Password"
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.textLight}
           value={password}
           onChangeText={setPassword}
           secureTextEntry={secureTextEntry}
         />
         <TouchableOpacity
           onPress={() => setSecureTextEntry(!secureTextEntry)}
-          style={styles.eyeIcon}
+          style={themedStyles.eyeIcon}
         >
           <Ionicons
             name={secureTextEntry ? 'eye-off' : 'eye'}
             size={24}
-            color="#999"
+            color={colors.textLight}
           />
         </TouchableOpacity>
       </View>
       <TouchableOpacity onPress={() => Alert.alert('Forgot Password', 'This feature is not implemented yet.')}>
-        <Text style={styles.forgotPassword}>Forgot Password?</Text>
+        <Text style={themedStyles.forgotPassword}>Forgot Password?</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.signInButton} onPress={handleLogin}>
-        <Text style={styles.signInButtonText}>Sign In</Text>
+      <TouchableOpacity style={themedStyles.signInButton} onPress={handleLogin}>
+        <Text style={themedStyles.signInButtonText}>Sign In</Text>
       </TouchableOpacity>
-      <Text style={styles.orText}>Or sign in with</Text>
-      <View style={styles.socialButtons}>
-        <TouchableOpacity style={styles.socialButton}>
-          <Ionicons name="logo-apple" size={24} color="#000" />
+      <Text style={themedStyles.orText}>Or sign in with</Text>
+      <View style={themedStyles.socialButtons}>
+        <TouchableOpacity style={themedStyles.socialButton}>
+          <Ionicons name="logo-apple" size={24} color={colors.text} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.socialButton} onPress={() => promptAsync()}>
-          <Ionicons name="logo-google" size={24} color="#000" />
+        <TouchableOpacity style={themedStyles.socialButton} onPress={() => promptAsync()}>
+          <Ionicons name="logo-google" size={24} color={colors.text} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.socialButton}>
-          <Ionicons name="logo-facebook" size={24} color="#000" />
+        <TouchableOpacity style={themedStyles.socialButton}>
+          <Ionicons name="logo-facebook" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
-      <View style={styles.registerLink}>
-        <Text style={styles.registerText}>Don’t have an account? </Text>
+      <View style={themedStyles.registerLink}>
+        <Text style={themedStyles.registerText}>Don't have an account? </Text>
         <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-          <Text style={styles.registerLinkText}>Sign Up</Text>
+          <Text style={themedStyles.registerLinkText}>Sign Up</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    backgroundColor: '#fff',
-  },
-  logo: {
-    width: 200,
-    height: 200,
-    resizeMode: 'contain',
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#000',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  input: {
-    width: '100%',
-    height: 50,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    marginBottom: 15,
-    fontSize: 16,
-    color: '#000',
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-  inputPassword: {
-    flex: 1,
-    height: 50,
-    paddingHorizontal: 15,
-    fontSize: 16,
-    color: '#000',
-  },
-  eyeIcon: {
-    padding: 10,
-  },
-  forgotPassword: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'right',
-    marginBottom: 20,
-  },
-  signInButton: {
-    width: '100%',
-    backgroundColor: '#8B4513',
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  signInButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  orText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  socialButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 10,
-  },
-  registerLink: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  registerText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  registerLinkText: {
-    fontSize: 14,
-    color: '#8B4513',
-    fontWeight: 'bold',
-  },
-});
 
 export default LoginScreen;

@@ -11,8 +11,10 @@ import {
 import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../constants/firebaseConfig';
 import SimpleHeader from '../components/common/SimpleHeader';
+import { useTheme } from '../context/ThemeContext';
 
 export default function EditProductScreen({ route, navigation }) {
+  const { colors } = useTheme();
   const { product } = route.params;
 
   // 🧪 Debug log
@@ -21,8 +23,8 @@ export default function EditProductScreen({ route, navigation }) {
   // ✅ Kiểm tra null/undefined
   if (!product || !product.id) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Không tìm thấy sản phẩm để chỉnh sửa.</Text>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.card }}>
+        <Text style={{ color: colors.text }}>Không tìm thấy sản phẩm để chỉnh sửa.</Text>
       </View>
     );
   }
@@ -83,104 +85,112 @@ export default function EditProductScreen({ route, navigation }) {
     );
   };
 
+  // Define styles inside the component to use theme colors
+  const themedStyles = StyleSheet.create({
+    container: {
+      padding: 20,
+      backgroundColor: colors.card,
+      flexGrow: 1,
+    },
+    label: {
+      fontWeight: 'bold',
+      marginTop: 12,
+      color: colors.text,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 10,
+      marginTop: 4,
+      color: colors.text,
+    },
+    buttonGroup: {
+      marginTop: 24,
+    },
+    button: {
+      backgroundColor: colors.primary,
+      padding: 12,
+      borderRadius: 8,
+      marginBottom: 12,
+      alignItems: 'center',
+    },
+    deleteButton: {
+      backgroundColor: colors.error,
+    },
+    buttonText: {
+      color: colors.card,
+      fontWeight: 'bold',
+    },
+  });
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={themedStyles.container}>
       <SimpleHeader title="Chỉnh sửa sản phẩm" onBack={() => navigation.goBack()} />
 
-      <Text style={styles.label}>Tên sản phẩm</Text>
+      <Text style={themedStyles.label}>Tên sản phẩm</Text>
       <TextInput
-        style={styles.input}
+        style={themedStyles.input}
         value={productName}
         onChangeText={setProductName}
+        placeholderTextColor={colors.textLight}
       />
 
-      <Text style={styles.label}>Mô tả</Text>
+      <Text style={themedStyles.label}>Mô tả</Text>
       <TextInput
-        style={styles.input}
+        style={themedStyles.input}
         value={description}
         onChangeText={setDescription}
         multiline
+        placeholderTextColor={colors.textLight}
       />
 
-      <Text style={styles.label}>Giá (₫)</Text>
+      <Text style={themedStyles.label}>Giá (₫)</Text>
       <TextInput
-        style={styles.input}
+        style={themedStyles.input}
         value={price}
         onChangeText={setPrice}
         keyboardType="numeric"
+        placeholderTextColor={colors.textLight}
       />
 
-      <Text style={styles.label}>Tồn kho</Text>
+      <Text style={themedStyles.label}>Tồn kho</Text>
       <TextInput
-        style={styles.input}
+        style={themedStyles.input}
         value={stock}
         onChangeText={setStock}
         keyboardType="numeric"
+        placeholderTextColor={colors.textLight}
       />
 
-      <Text style={styles.label}>Ảnh (URL)</Text>
+      <Text style={themedStyles.label}>Ảnh (URL)</Text>
       <TextInput
-        style={styles.input}
+        style={themedStyles.input}
         value={imageUrl}
         onChangeText={setImageUrl}
+        placeholderTextColor={colors.textLight}
       />
 
       {/* Nếu bạn muốn hiển thị ngày tạo sản phẩm */}
       {product.created_at && (
         <View style={{ marginTop: 12 }}>
-          <Text style={styles.label}>Ngày tạo</Text>
-          <Text>{product.created_at.toDate().toLocaleString()}</Text>
+          <Text style={themedStyles.label}>Ngày tạo</Text>
+          <Text style={{ color: colors.text }}>{product.created_at.toDate().toLocaleString()}</Text>
         </View>
       )}
 
-      <View style={styles.buttonGroup}>
-        <TouchableOpacity style={styles.button} onPress={handleUpdate}>
-          <Text style={styles.buttonText}>Cập nhật sản phẩm</Text>
+      <View style={themedStyles.buttonGroup}>
+        <TouchableOpacity style={themedStyles.button} onPress={handleUpdate}>
+          <Text style={themedStyles.buttonText}>Cập nhật sản phẩm</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.button, styles.deleteButton]}
+          style={[themedStyles.button, themedStyles.deleteButton]}
           onPress={handleDelete}
         >
-          <Text style={styles.buttonText}>Xoá sản phẩm</Text>
+          <Text style={themedStyles.buttonText}>Xoá sản phẩm</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: '#fff',
-    flexGrow: 1,
-  },
-  label: {
-    fontWeight: 'bold',
-    marginTop: 12,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 4,
-  },
-  buttonGroup: {
-    marginTop: 24,
-  },
-  button: {
-    backgroundColor: '#8B4513',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  deleteButton: {
-    backgroundColor: '#B22222',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-});

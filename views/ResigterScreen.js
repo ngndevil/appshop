@@ -4,13 +4,16 @@ import { auth } from '../constants/firebaseConfig';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { Ionicons } from '@expo/vector-icons';
 import Checkbox from 'expo-checkbox';
+import { useTheme } from '../context/ThemeContext';
 
 const RegisterScreen = ({ navigation }) => {
+  const { colors } = useTheme();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [secureTextEntry, setSecureTextEntry] = useState(true); // Ẩn/hiện mật khẩu
+  const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [isChecked, setChecked] = useState(false); 
+  
   const handleRegister = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!name) {
@@ -53,20 +56,139 @@ const RegisterScreen = ({ navigation }) => {
       });
   };
 
+  // Define styles inside component to use theme colors
+  const themedStyles = StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingHorizontal: 20,
+      backgroundColor: colors.card,
+    },
+    logo: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: 20,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: 10,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginBottom: 30,
+    },
+    input: {
+      height: 50,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: 8,
+      paddingHorizontal: 15,
+      marginBottom: 15,
+      fontSize: 16,
+      color: colors.text,
+    },
+    passwordContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: 8,
+      marginBottom: 15,
+    },
+    inputPassword: {
+      flex: 1,
+      height: 50,
+      paddingHorizontal: 15,
+      fontSize: 16,
+      color: colors.text,
+    },
+    eyeIcon: {
+      padding: 10,
+    },
+    checkboxContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    checkbox: {
+      marginRight: 10,
+    },
+    checkboxText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    termsLink: {
+      color: colors.primary,
+      textDecorationLine: 'underline',
+    },
+    signUpButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: 15,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    signUpButtonText: {
+      color: colors.card,
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    orText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginBottom: 20,
+    },
+    socialButtons: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginBottom: 20,
+    },
+    socialButton: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      backgroundColor: colors.primaryLightest,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginHorizontal: 10,
+    },
+    signInLink: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+    },
+    signInText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    signInLinkText: {
+      fontSize: 14,
+      color: colors.primary,
+      fontWeight: 'bold',
+    },
+  });
+
   return (
-    <View style={styles.container}>
+    <View style={themedStyles.container}>
       {/* Logo */}
-      <Text style={styles.logo}>Insightlancer</Text>
+      <Text style={themedStyles.logo}>Insightlancer</Text>
 
       {/* Tiêu đề */}
-      <Text style={styles.title}>Create Account</Text>
-      <Text style={styles.subtitle}>Fill your information below or register with your social account</Text>
+      <Text style={themedStyles.title}>Create Account</Text>
+      <Text style={themedStyles.subtitle}>Fill your information below or register with your social account</Text>
 
       {/* Trường Name */}
       <TextInput
-        style={styles.input}
+        style={themedStyles.input}
         placeholder="Name"
-        placeholderTextColor="#999"
+        placeholderTextColor={colors.textLight}
         value={name}
         onChangeText={setName}
         autoCapitalize="words"
@@ -74,9 +196,9 @@ const RegisterScreen = ({ navigation }) => {
 
       {/* Trường Email */}
       <TextInput
-        style={styles.input}
+        style={themedStyles.input}
         placeholder="Email"
-        placeholderTextColor="#999"
+        placeholderTextColor={colors.textLight}
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -84,186 +206,68 @@ const RegisterScreen = ({ navigation }) => {
       />
 
       {/* Trường Password */}
-      <View style={styles.passwordContainer}>
+      <View style={themedStyles.passwordContainer}>
         <TextInput
-          style={styles.inputPassword}
+          style={themedStyles.inputPassword}
           placeholder="Password"
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.textLight}
           value={password}
           onChangeText={setPassword}
           secureTextEntry={secureTextEntry}
         />
         <TouchableOpacity
           onPress={() => setSecureTextEntry(!secureTextEntry)}
-          style={styles.eyeIcon}
+          style={themedStyles.eyeIcon}
         >
           <Ionicons
             name={secureTextEntry ? 'eye-off' : 'eye'}
             size={24}
-            color="#999"
+            color={colors.textLight}
           />
         </TouchableOpacity>
       </View>
 
       {/* Checkbox Agree with Terms & Condition */}
-      <View style={styles.checkboxContainer}>
+      <View style={themedStyles.checkboxContainer}>
         <Checkbox
           value={isChecked}
           onValueChange={setChecked}
-          color={isChecked ? '#8B4513' : undefined}
-          style={styles.checkbox}
+          color={isChecked ? colors.primary : undefined}
+          style={themedStyles.checkbox}
         />
         <TouchableOpacity onPress={() => setChecked(!isChecked)}>
-          <Text style={styles.checkboxText}>Agree with <Text style={styles.termsLink}>Terms & Condition</Text></Text>
+          <Text style={themedStyles.checkboxText}>Agree with <Text style={themedStyles.termsLink}>Terms & Condition</Text></Text>
         </TouchableOpacity>
       </View>
 
       {/* Nút Sign Up */}
-      <TouchableOpacity style={styles.signUpButton} onPress={handleRegister}>
-        <Text style={styles.signUpButtonText}>Sign Up</Text>
+      <TouchableOpacity style={themedStyles.signUpButton} onPress={handleRegister}>
+        <Text style={themedStyles.signUpButtonText}>Sign Up</Text>
       </TouchableOpacity>
 
       {/* Đăng nhập bằng Apple/Google/Facebook */}
-      <Text style={styles.orText}>Or sign up with</Text>
-      <View style={styles.socialButtons}>
-        <TouchableOpacity style={styles.socialButton}>
-          <Ionicons name="logo-apple" size={24} color="#000" />
+      <Text style={themedStyles.orText}>Or sign up with</Text>
+      <View style={themedStyles.socialButtons}>
+        <TouchableOpacity style={themedStyles.socialButton}>
+          <Ionicons name="logo-apple" size={24} color={colors.text} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.socialButton}>
-          <Ionicons name="logo-google" size={24} color="#000" />
+        <TouchableOpacity style={themedStyles.socialButton}>
+          <Ionicons name="logo-google" size={24} color={colors.text} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.socialButton}>
-          <Ionicons name="logo-facebook" size={24} color="#000" />
+        <TouchableOpacity style={themedStyles.socialButton}>
+          <Ionicons name="logo-facebook" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
       {/* Liên kết đến Sign In */}
-      <View style={styles.signInLink}>
-        <Text style={styles.signInText}>Already have an account? </Text>
+      <View style={themedStyles.signInLink}>
+        <Text style={themedStyles.signInText}>Already have an account? </Text>
         <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')}>
-          <Text style={styles.signInLinkText}>Sign In</Text>
+          <Text style={themedStyles.signInLinkText}>Sign In</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    backgroundColor: '#fff',
-  },
-  logo: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#000',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  input: {
-    height: 50,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    marginBottom: 15,
-    fontSize: 16,
-    color: '#000',
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-  inputPassword: {
-    flex: 1,
-    height: 50,
-    paddingHorizontal: 15,
-    fontSize: 16,
-    color: '#000',
-  },
-  eyeIcon: {
-    padding: 10,
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  checkbox: {
-    marginRight: 10,
-  },
-  checkboxText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  termsLink: {
-    color: '#8B4513',
-    textDecorationLine: 'underline',
-  },
-  signUpButton: {
-    backgroundColor: '#8B4513', // Màu nâu giống trong thiết kế
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  signUpButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  orText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  socialButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 10,
-  },
-  signInLink: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  signInText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  signInLinkText: {
-    fontSize: 14,
-    color: '#8B4513',
-    fontWeight: 'bold',
-  },
-});
 
 export default RegisterScreen;

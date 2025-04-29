@@ -6,9 +6,12 @@ import Header from '../components/common/Header';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import SimpleHeader from '../components/common/SimpleHeader';
+import { useTheme } from '../context/ThemeContext';
+
 const screenWidth = Dimensions.get('window').width;
 
 export default function RevenueScreen() {
+  const { colors } = useTheme();
   const [orders, setOrders] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [selectedRange, setSelectedRange] = useState('7days');
@@ -91,36 +94,94 @@ export default function RevenueScreen() {
     };
   };
 
+  // Define themed styles inside component to use theme colors
+  const themedStyles = StyleSheet.create({
+    container: { 
+      flex: 1, 
+      backgroundColor: colors.background, 
+      padding: 16 
+    },
+    filterRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginBottom: 12,
+    },
+    rangeButton: {
+      paddingVertical: 6,
+      paddingHorizontal: 14,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+    },
+    activeButton: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    buttonText: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: colors.text,
+    },
+    activeButtonText: {
+      color: colors.card,
+    },
+    chart: {
+      marginTop: 12,
+      borderRadius: 8,
+    },
+    datePickerButton: {
+      alignSelf: 'center',
+      backgroundColor: colors.disabled,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+      marginBottom: 6,
+    },
+    datePickerText: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: colors.text,
+    },
+    dailyRevenueText: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+  });
+
   return (
-    <View style={styles.container}>
+    <View style={themedStyles.container}>
       <SimpleHeader title="Thống kê doanh thu" showBackButton />
 
-      <View style={styles.filterRow}>
+      <View style={themedStyles.filterRow}>
         <TouchableOpacity
-          style={[styles.rangeButton, selectedRange === '7days' && styles.activeButton]}
+          style={[themedStyles.rangeButton, selectedRange === '7days' && themedStyles.activeButton]}
           onPress={() => setSelectedRange('7days')}
         >
-          <Text style={[styles.buttonText, selectedRange === '7days' && styles.activeButtonText]}>7 ngày</Text>
+          <Text style={[themedStyles.buttonText, selectedRange === '7days' && themedStyles.activeButtonText]}>7 ngày</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.rangeButton, selectedRange === '30days' && styles.activeButton]}
+          style={[themedStyles.rangeButton, selectedRange === '30days' && themedStyles.activeButton]}
           onPress={() => setSelectedRange('30days')}
         >
-          <Text style={[styles.buttonText, selectedRange === '30days' && styles.activeButtonText]}>30 ngày</Text>
+          <Text style={[themedStyles.buttonText, selectedRange === '30days' && themedStyles.activeButtonText]}>30 ngày</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.rangeButton, selectedRange === '1year' && styles.activeButton]}
+          style={[themedStyles.rangeButton, selectedRange === '1year' && themedStyles.activeButton]}
           onPress={() => setSelectedRange('1year')}
         >
-          <Text style={[styles.buttonText, selectedRange === '1year' && styles.activeButtonText]}>1 năm</Text>
+          <Text style={[themedStyles.buttonText, selectedRange === '1year' && themedStyles.activeButtonText]}>1 năm</Text>
         </TouchableOpacity>
       </View>
 
       <TouchableOpacity
-        style={styles.datePickerButton}
+        style={themedStyles.datePickerButton}
         onPress={() => setShowPicker(true)}
       >
-        <Text style={styles.datePickerText}>
+        <Text style={themedStyles.datePickerText}>
           Chọn ngày: {format(selectedDate, 'dd/MM/yyyy')}
         </Text>
       </TouchableOpacity>
@@ -137,7 +198,7 @@ export default function RevenueScreen() {
         />
       )}
 
-      <Text style={styles.dailyRevenueText}>
+      <Text style={themedStyles.dailyRevenueText}>
         Doanh thu ngày {format(selectedDate, 'dd/MM/yyyy')}: {dailyRevenue.toLocaleString()}₫
       </Text>
 
@@ -149,68 +210,17 @@ export default function RevenueScreen() {
         showValuesOnTopOfBars
         yAxisSuffix="₫"
         chartConfig={{
-          backgroundGradientFrom: '#fff',
-          backgroundGradientTo: '#fff',
+          backgroundGradientFrom: colors.card,
+          backgroundGradientTo: colors.card,
           decimalPlaces: 0,
-          color: (opacity = 1) => `rgba(44, 62, 80, ${opacity})`,
-          labelColor: () => '#34495E',
+          color: (opacity = 1) => `rgba(139, 69, 19, ${opacity})`, // colors.primary in rgba
+          labelColor: () => colors.text,
           style: { borderRadius: 16 },
         }}
-        style={styles.chart}
+        style={themedStyles.chart}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5', padding: 16 },
-  filterRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 12,
-  },
-  rangeButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#fff',
-  },
-  activeButton: {
-    backgroundColor: '#2C3E50',
-    borderColor: '#2C3E50',
-  },
-  buttonText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#333',
-  },
-  activeButtonText: {
-    color: '#fff',
-  },
-  chart: {
-    marginTop: 12,
-    borderRadius: 8,
-  },
-  datePickerButton: {
-    alignSelf: 'center',
-    backgroundColor: '#ddd',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    marginBottom: 6,
-  },
-  datePickerText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#2C3E50',
-  },
-  dailyRevenueText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2C3E50',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-});
+

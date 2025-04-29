@@ -1,300 +1,224 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  Animated,
-} from 'react-native';
-import MultiSlider from '@ptomasroos/react-native-multi-slider';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { BarChart } from 'react-native-chart-kit';
 import Header from '../components/common/Header';
-import ProductCard from '../components/products/ProductCard';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../constants/firebaseConfig';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { useNavigation } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
-import FloatingAdminMenu from '../components/admin/FloatingAdminMenu';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { format } from 'date-fns';
+import SimpleHeader from '../components/common/SimpleHeader';
+import { useTheme } from '../context/ThemeContext';
 
-export default function SearchResultsScreen({ route }) {
-  const { searchQuery, products = [] } = route.params || {};
-  const [sortOrder, setSortOrder] = useState('asc');
-  const [minPrice, setMinPrice] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(5000000);
-  const [sliderMinPrice, setSliderMinPrice] = useState(0);
-  const [sliderMaxPrice, setSliderMaxPrice] = useState(5000000);
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [filterHeight] = useState(new Animated.Value(0));
+const screenWidth = Dimensions.get('window').width;
 
-  const auth = getAuth();
-  const navigation = useNavigation();
+export default function RevenueScreen() {
+  const { colors } = useTheme();
+  const [orders, setOrders] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [selectedRange, setSelectedRange] = useState('7days');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(false);
+  const [dailyRevenue, setDailyRevenue] = useState(0);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          const adminDocRef = doc(db, 'admin', 'adminacc');
-          const adminDoc = await getDoc(adminDocRef);
-          const adminData = adminDoc.data();
-          const emails = Object.values(adminData || {});
-          const isAdminUser = emails.includes(user.email);
-          setIsAdmin(isAdminUser);
-        } catch (error) {
-          console.error('Lỗi kiểm tra quyền admin:', error);
-        }
-      } else {
-        navigation.navigate('LoginScreen');
-      }
+    fetchOrders();
+  }, []);
+
+  useEffect(() => {
+    filterData();
+  }, [orders, selectedRange]);
+
+  useEffect(() => {
+    calculateDailyRevenue();
+  }, [selectedDate, orders]);
+
+  const fetchOrders = async () => {
+    const db = getFirestore();
+    const snapshot = await getDocs(collection(db, 'orders'));
+    const fetchedOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setOrders(fetchedOrders);
+  };
+
+  const filterData = () => {
+    const now = new Date();
+    const rangeDate = new Date(now);
+
+    if (selectedRange === '7days') rangeDate.setDate(now.getDate() - 6);
+    else if (selectedRange === '30days') rangeDate.setDate(now.getDate() - 29);
+    else if (selectedRange === '1year') rangeDate.setFullYear(now.getFullYear() - 1);
+
+    const filtered = orders.filter(order => {
+      const orderDate = new Date(order.createdAt || order.created_at);
+      return orderDate >= rangeDate;
     });
 
-    return () => unsubscribe();
-  }, [navigation]);
-
-  useEffect(() => {
-    filterAndSortProducts();
-  }, [sortOrder, minPrice, maxPrice, products]);
-
-  const filterAndSortProducts = () => {
-    const filtered = products
-      .filter(product => product.price >= minPrice && product.price <= maxPrice)
-      .sort((a, b) =>
-        sortOrder === 'asc' ? a.price - b.price : b.price - a.price
-      );
-    setFilteredProducts(filtered);
+    setFilteredData(filtered);
   };
 
-  const resetFilters = () => {
-    setSortOrder('asc');
-    setMinPrice(0);
-    setMaxPrice(5000000);
-    setSliderMinPrice(0);
-    setSliderMaxPrice(5000000);
+  const calculateDailyRevenue = () => {
+    const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
+    const revenue = orders.reduce((total, order) => {
+      const orderDate = new Date(order.createdAt || order.created_at);
+      const dateStr = format(orderDate, 'yyyy-MM-dd');
+      if (dateStr === selectedDateStr) {
+        const itemRevenue = (order.items || []).reduce((sum, item) => sum + item.price * item.quantity, 0);
+        return total + itemRevenue;
+      }
+      return total;
+    }, 0);
+    setDailyRevenue(revenue);
   };
 
-  const toggleFilters = () => {
-    if (showFilters) {
-      Animated.timing(filterHeight, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: false,
-      }).start(() => setShowFilters(false));
-    } else {
-      setShowFilters(true);
-      Animated.timing(filterHeight, {
-        toValue: 260,
-        duration: 250,
-        useNativeDriver: false,
-      }).start();
-    }
+  const prepareChartData = () => {
+    const groupByDate = {};
+
+    filteredData.forEach(order => {
+      const date = new Date(order.createdAt || order.created_at);
+      const dateStr = format(date, 'yyyy-MM-dd'); // for sorting
+      const dayRevenue = (order.items || []).reduce((sum, item) => sum + item.price * item.quantity, 0);
+      groupByDate[dateStr] = (groupByDate[dateStr] || 0) + dayRevenue;
+    });
+
+    const sortedDates = Object.keys(groupByDate).sort();
+
+    const labels = [];
+    const revenues = [];
+
+    sortedDates.forEach(dateStr => {
+      labels.push(format(new Date(dateStr), 'dd/MM')); // for display
+      revenues.push(groupByDate[dateStr]);
+    });
+
+    return {
+      labels,
+      datasets: [{ data: revenues }]
+    };
   };
 
-  const renderProduct = ({ item }) => (
-    <ProductCard
-      product={item}
-      onEdit={() => {
-        const { created_at, ...cleanProduct } = item;
-        navigation.navigate('EditProductScreen', { product: cleanProduct });
-      }}
-      isAdmin={isAdmin}
-    />
-  );
+  // Define themed styles inside component to use theme colors
+  const themedStyles = StyleSheet.create({
+    container: { 
+      flex: 1, 
+      backgroundColor: colors.background, 
+      padding: 16 
+    },
+    filterRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginBottom: 12,
+    },
+    rangeButton: {
+      paddingVertical: 6,
+      paddingHorizontal: 14,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+    },
+    activeButton: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    buttonText: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: colors.text,
+    },
+    activeButtonText: {
+      color: colors.card,
+    },
+    chart: {
+      marginTop: 12,
+      borderRadius: 8,
+    },
+    datePickerButton: {
+      alignSelf: 'center',
+      backgroundColor: colors.disabled,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+      marginBottom: 6,
+    },
+    datePickerText: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: colors.text,
+    },
+    dailyRevenueText: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+  });
 
   return (
-    <View style={styles.container}>
-      <Header title={`Kết quả tìm kiếm: "${searchQuery}"`} showBackButton={true} />
+    <View style={themedStyles.container}>
+      <SimpleHeader title="Thống kê doanh thu" showBackButton />
 
-      <TouchableOpacity style={styles.filterToggleButton} onPress={toggleFilters}>
-        <Feather name="filter" size={18} color="#fff" style={{ marginRight: 6 }} />
-        <Text style={styles.filterToggleButtonText}>
-          {showFilters ? 'Ẩn bộ lọc' : 'Bộ lọc'}
+      <View style={themedStyles.filterRow}>
+        <TouchableOpacity
+          style={[themedStyles.rangeButton, selectedRange === '7days' && themedStyles.activeButton]}
+          onPress={() => setSelectedRange('7days')}
+        >
+          <Text style={[themedStyles.buttonText, selectedRange === '7days' && themedStyles.activeButtonText]}>7 ngày</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[themedStyles.rangeButton, selectedRange === '30days' && themedStyles.activeButton]}
+          onPress={() => setSelectedRange('30days')}
+        >
+          <Text style={[themedStyles.buttonText, selectedRange === '30days' && themedStyles.activeButtonText]}>30 ngày</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[themedStyles.rangeButton, selectedRange === '1year' && themedStyles.activeButton]}
+          onPress={() => setSelectedRange('1year')}
+        >
+          <Text style={[themedStyles.buttonText, selectedRange === '1year' && themedStyles.activeButtonText]}>1 năm</Text>
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity
+        style={themedStyles.datePickerButton}
+        onPress={() => setShowPicker(true)}
+      >
+        <Text style={themedStyles.datePickerText}>
+          Chọn ngày: {format(selectedDate, 'dd/MM/yyyy')}
         </Text>
       </TouchableOpacity>
 
-      {showFilters && (
-        <Animated.View style={[styles.filterContainer, { height: filterHeight }]}>
-          <Text style={styles.filterTitle}>Sắp xếp theo giá:</Text>
-          <View style={styles.sortButtons}>
-            <TouchableOpacity
-              style={[styles.sortButton, sortOrder === 'asc' && styles.activeButton]}
-              onPress={() => setSortOrder('asc')}
-            >
-              <Text style={[styles.sortButtonText, sortOrder === 'asc' && styles.activeSortButtonText]}>
-                Tăng dần
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.sortButton, sortOrder === 'desc' && styles.activeButton]}
-              onPress={() => setSortOrder('desc')}
-            >
-              <Text style={[styles.sortButtonText, sortOrder === 'desc' && styles.activeSortButtonText]}>
-                Giảm dần
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.sliderSection}>
-            <Text style={styles.sliderLabel}>
-              Giá từ: {sliderMinPrice.toLocaleString()}₫ - {sliderMaxPrice.toLocaleString()}₫
-            </Text>
-            <MultiSlider
-              values={[sliderMinPrice, sliderMaxPrice]}
-              min={0}
-              max={5000000}
-              step={10000}
-              sliderLength={300}
-              onValuesChange={values => {
-                setSliderMinPrice(values[0]);
-                setSliderMaxPrice(values[1]);
-              }}
-              selectedStyle={{ backgroundColor: '#2C3E50' }}
-              unselectedStyle={{ backgroundColor: '#D5DBDB' }}
-              markerStyle={{
-                height: 24,
-                width: 24,
-                borderRadius: 12,
-                backgroundColor: '#2C3E50',
-                borderWidth: 2,
-                borderColor: '#fff',
-              }}
-              containerStyle={{ marginTop: 12 }}
-            />
-          </View>
-
-          <View style={styles.filterActions}>
-            <TouchableOpacity
-              style={[styles.button, styles.applyButton]}
-              onPress={() => {
-                setMinPrice(sliderMinPrice);
-                setMaxPrice(sliderMaxPrice);
-              }}
-            >
-              <Text style={styles.buttonText}>Áp dụng</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, styles.resetButton]}
-              onPress={resetFilters}
-            >
-              <Text style={styles.buttonText}>Reset bộ lọc</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
+      {showPicker && (
+        <DateTimePicker
+          value={selectedDate}
+          mode="date"
+          display="default"
+          onChange={(event, date) => {
+            setShowPicker(false);
+            if (date) setSelectedDate(date);
+          }}
+        />
       )}
 
-      <Text style={{ marginLeft: 16, marginTop: 10, color: '#555', fontSize: 13 }}>
-        Đang hiển thị: {filteredProducts.length} sản phẩm
+      <Text style={themedStyles.dailyRevenueText}>
+        Doanh thu ngày {format(selectedDate, 'dd/MM/yyyy')}: {dailyRevenue.toLocaleString()}₫
       </Text>
 
-      <FlatList
-        data={filteredProducts}
-        keyExtractor={item => item.id?.toString()}
-        renderItem={renderProduct}
-        contentContainerStyle={styles.listContainer}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>Không tìm thấy sản phẩm phù hợp</Text>
-        }
+      <BarChart
+        data={prepareChartData()}
+        width={screenWidth - 32}
+        height={250}
+        fromZero
+        showValuesOnTopOfBars
+        yAxisSuffix="₫"
+        chartConfig={{
+          backgroundGradientFrom: colors.card,
+          backgroundGradientTo: colors.card,
+          decimalPlaces: 0,
+          color: (opacity = 1) => `rgba(139, 69, 19, ${opacity})`, // colors.primary in rgba
+          labelColor: () => colors.text,
+          style: { borderRadius: 16 },
+        }}
+        style={themedStyles.chart}
       />
-
-      {isAdmin && <FloatingAdminMenu />}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f8f8' },
-
-  filterToggleButton: {
-    flexDirection: 'row',
-    backgroundColor: '#2C3E50',
-    padding: 10,
-    margin: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterToggleButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-
-  filterContainer: {
-    overflow: 'hidden',
-    backgroundColor: '#fff',
-    padding: 10,
-  },
-  filterTitle: { fontSize: 14, fontWeight: 'bold', marginBottom: 6 },
-
-  sortButtons: { flexDirection: 'row', marginBottom: 10 },
-  sortButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    marginRight: 8,
-    backgroundColor: '#fff',
-  },
-  activeButton: {
-    backgroundColor: '#2C3E50',
-    borderColor: '#2C3E50',
-  },
-  sortButtonText: { color: '#333', fontWeight: '500', fontSize: 13 },
-  activeSortButtonText: { color: '#fff' },
-
-  sliderSection: {
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    marginTop: 4,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  sliderLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#2C3E50',
-    marginBottom: 6,
-  },
-
-  filterActions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 12,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  applyButton: {
-    backgroundColor: '#27ae60',
-  },
-  resetButton: {
-    backgroundColor: '#e74c3c',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 13,
-  },
-
-  listContainer: { padding: 16 },
-
-  emptyText: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#666',
-    marginTop: 20,
-  },
-});

@@ -13,32 +13,35 @@ import OrderHistoryScreen from '../views/OrderHistoryScreen';
 import AddProductScreen from '../views/AddProductScreen';
 import EditProductScreen from '../views/EditProductScreen';
 import RevenueScreen from '../views/RevenueScreen';
-import OrderStatusScreen from '../views/OrderStatusScreen'
-import OderManagementScreen from '../views/OrderManagementScreen'
-import OrderTrackingScreen from '../views/OrderTrackingScreen'
+import OrderStatusScreen from '../views/OrderStatusScreen';
+import OderManagementScreen from '../views/OrderManagementScreen';
+import OrderTrackingScreen from '../views/OrderTrackingScreen';
+import { ThemeProvider } from '../context/ThemeContext';
+
 const Stack = createStackNavigator();
 
 export default function App() {
   return (
-    <CartProvider>
-    <Stack.Navigator initialRouteName="LandingScreen" screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="LandingScreen" component={LandingScreen} />
-      <Stack.Screen name="LoginScreen" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
-      <Stack.Screen name="OrderHistoryScreen" component={OrderHistoryScreen} />
-      <Stack.Screen name="ProductListScreen" component={ProductListScreen} />
-      <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} />
-      <Stack.Screen name="SearchResultsScreen" component={SearchResultsScreen} />
-      <Stack.Screen name="ProductDetailScreen" component={ProductDetailScreen} />
-      <Stack.Screen name="ProductCartScreen" component={ProductCartScreen} />
-      <Stack.Screen name="AddProductScreen" component={AddProductScreen} />
-      <Stack.Screen name="EditProductScreen" component={EditProductScreen} />
-      <Stack.Screen name="RevenueScreen" component={RevenueScreen} />
-      <Stack.Screen name="OrderStatus" component={OrderStatusScreen} />
-      <Stack.Screen name="OrderManagementScreen" component={OderManagementScreen} />
-      <Stack.Screen name="OrderTrackingScreen" component={OrderTrackingScreen} />
-
-    </Stack.Navigator>
-  </CartProvider>
+    <ThemeProvider>
+      <CartProvider>
+        <Stack.Navigator initialRouteName="LandingScreen" screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="LandingScreen" component={LandingScreen} />
+          <Stack.Screen name="LoginScreen" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="OrderHistoryScreen" component={OrderHistoryScreen} />
+          <Stack.Screen name="ProductListScreen" component={ProductListScreen} />
+          <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} />
+          <Stack.Screen name="SearchResultsScreen" component={SearchResultsScreen} />
+          <Stack.Screen name="ProductDetailScreen" component={ProductDetailScreen} />
+          <Stack.Screen name="ProductCartScreen" component={ProductCartScreen} />
+          <Stack.Screen name="AddProductScreen" component={AddProductScreen} />
+          <Stack.Screen name="EditProductScreen" component={EditProductScreen} />
+          <Stack.Screen name="RevenueScreen" component={RevenueScreen} />
+          <Stack.Screen name="OrderStatus" component={OrderStatusScreen} />
+          <Stack.Screen name="OrderManagementScreen" component={OderManagementScreen} />
+          <Stack.Screen name="OrderTrackingScreen" component={OrderTrackingScreen} />
+        </Stack.Navigator>
+      </CartProvider>
+    </ThemeProvider>
   );
 }
