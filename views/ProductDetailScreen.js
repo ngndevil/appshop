@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import {
   View, Text, Image, ScrollView, TouchableOpacity,
-  StyleSheet, Pressable, Modal
+  StyleSheet, Pressable, Modal, Animated, Dimensions
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useCart } from '../context/CartProvider';
 import Header from '../components/common/Header';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../context/ThemeContext';
 
 export default function ProductDetailScreen({ route }) {
@@ -17,6 +18,7 @@ export default function ProductDetailScreen({ route }) {
   const { addToCart } = useCart();
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const windowWidth = Dimensions.get('window').width;
 
   // Define styles inside component to use theme colors
   const themedStyles = StyleSheet.create({
@@ -24,8 +26,6 @@ export default function ProductDetailScreen({ route }) {
     scrollView: {
       flex: 1,
       backgroundColor: colors.background,
-      paddingTop: 20,
-      paddingBottom: 20, // Avoid being covered by the action bar
     },
     // Container Styles
     container: {
@@ -36,44 +36,111 @@ export default function ProductDetailScreen({ route }) {
       flex: 1,
     },
     scrollContent: {
-      paddingBottom: 20, // Avoid being covered by the action bar
+      paddingBottom: 80,
     },
 
     // Image Styles
+    imageContainer: {
+      width: '100%',
+      height: 400,
+      backgroundColor: colors.primaryLightest,
+      borderBottomLeftRadius: 30,
+      borderBottomRightRadius: 30,
+      overflow: 'hidden',
+      elevation: 4,
+      shadowColor: colors.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+    },
     productImage: {
-      alignSelf: 'center',
-      marginTop: 20,
-      width: '80%',
-      height: 350, // Increased height for better prominence
-      resizeMode: 'cover', // Prevent image distortion
-      borderBottomLeftRadius: 16,
-      borderBottomRightRadius: 16,
-      backgroundColor: colors.border, // Placeholder background while loading
+      width: '100%',
+      height: '100%',
+      resizeMode: 'cover',
     },
 
     // Info Section Styles
-    infoContainer: {
-      backgroundColor: colors.card,
-      borderRadius: 12,
-      marginHorizontal: 16,
-      marginTop: -20, // Overlap effect on the image
-      shadowColor: colors.shadow,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.1,
-      shadowRadius: 6,
-      elevation: 5,
+    infoSection: {
+      paddingHorizontal: 20,
+      marginTop: 20,
+    },
+    brandText: {
+      fontSize: 14,
+      color: colors.primary,
+      fontWeight: '600',
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+      marginBottom: 8,
     },
     productName: {
-      fontSize: 20,
+      fontSize: 24,
       fontWeight: '700',
       color: colors.text,
       marginBottom: 10,
+      letterSpacing: 0.5,
     },
     productPrice: {
-      fontSize: 20,
-      fontWeight: '600',
+      fontSize: 22,
+      fontWeight: '700',
       color: colors.primary,
+      marginBottom: 16,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginVertical: 16,
+      width: '100%',
+    },
+
+    // Description Section
+    descriptionSection: {
+      paddingHorizontal: 20,
+      marginTop: 8,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
       marginBottom: 12,
+    },
+    descriptionText: {
+      fontSize: 15,
+      lineHeight: 22,
+      color: colors.textSecondary,
+      marginBottom: 16,
+    },
+
+    // Size/Variant Section
+    sizeSection: {
+      paddingHorizontal: 20,
+      marginTop: 12,
+    },
+    sizeContainer: {
+      flexDirection: 'row',
+      marginTop: 10,
+      marginBottom: 20,
+    },
+    sizeOption: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      marginRight: 12,
+      minWidth: 45,
+      alignItems: 'center',
+    },
+    sizeOptionSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    sizeText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    sizeTextSelected: {
+      color: colors.card,
+      fontWeight: '600',
     },
 
     // Quantity Selector Styles
@@ -85,18 +152,19 @@ export default function ProductDetailScreen({ route }) {
       paddingVertical: 16,
       backgroundColor: colors.card,
       marginHorizontal: 16,
-      marginTop: 12,
-      borderRadius: 12,
+      marginTop: 20,
+      borderRadius: 16,
+      elevation: 3,
       shadowColor: colors.shadow,
       shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 3,
+      shadowOpacity: 0.12,
+      shadowRadius: 6,
     },
     quantityLabel: {
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: '600',
       color: colors.text,
+      letterSpacing: 0.5,
     },
     quantitySelector: {
       flexDirection: 'row',
@@ -105,103 +173,149 @@ export default function ProductDetailScreen({ route }) {
       borderColor: colors.border,
       borderRadius: 10,
       backgroundColor: colors.primaryLightest,
-      height: 48,
-      minWidth: 150,
+      height: 44,
+      minWidth: 130,
       justifyContent: 'space-between',
-      paddingHorizontal: 12,
+    },
+    quantityButton: {
+      width: 42,
+      height: '100%',
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     quantityText: {
-      fontSize: 20,
+      fontSize: 18,
       fontWeight: '600',
       color: colors.text,
-      minWidth: 40,
+      minWidth: 32,
       textAlign: 'center',
     },
-    quantityIconButton: {
-      padding: 6,
-      borderRadius: 8,
+
+    // Features Section
+    featuresSection: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      marginTop: 24,
+      marginBottom: 16,
     },
-    quantityIconButtonPressed: {
-      transform: [{ scale: 0.9 }],
-      backgroundColor: colors.primaryLighter,
+    featureItem: {
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      backgroundColor: colors.primaryLightest,
+      borderRadius: 12,
+      minWidth: (windowWidth - 56) / 3,
+    },
+    featureIcon: {
+      marginBottom: 6,
+    },
+    featureText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      fontWeight: '500',
     },
 
     // Action Bar Styles
     actionBar: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
       flexDirection: 'row',
       justifyContent: 'space-between',
       paddingHorizontal: 16,
       paddingVertical: 12,
-      backgroundColor: colors.card,
+      backgroundColor: colors.background,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      shadowColor: colors.shadow,
+      shadowOffset: { width: 0, height: -3 },
+      shadowOpacity: 0.1,
+      shadowRadius: 6,
+      elevation: 10,
       borderTopWidth: 1,
       borderTopColor: colors.border,
-      shadowColor: colors.shadow,
-      shadowOffset: { width: 0, height: -2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 5,
     },
     addToCartButton: {
       flex: 1,
-      backgroundColor: colors.primary,
+      backgroundColor: colors.primaryLightest,
       paddingVertical: 16,
-      borderRadius: 10,
+      borderRadius: 14,
       alignItems: 'center',
-      marginRight: 8,
-      shadowColor: colors.primary,
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.3,
-      shadowRadius: 5,
-      elevation: 3,
+      marginRight: 10,
+      borderWidth: 1,
+      borderColor: colors.primary,
     },
     buyNowButton: {
-      flex: 1,
-      backgroundColor: colors.textSecondary,
+      flex: 1.5,
+      backgroundColor: colors.primary,
       paddingVertical: 16,
-      borderRadius: 10,
+      borderRadius: 14,
       alignItems: 'center',
-      marginLeft: 8,
-      shadowColor: colors.textSecondary,
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.3,
-      shadowRadius: 5,
-      elevation: 3,
+      marginLeft: 10,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      shadowColor: colors.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 4,
     },
-    actionButtonText: {
+    addToCartText: {
+      color: colors.primary,
+      fontSize: 16,
+      fontWeight: '600',
+      letterSpacing: 0.5,
+    },
+    buyNowText: {
       color: colors.card,
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: '700',
+      letterSpacing: 0.5,
+      marginLeft: 8,
     },
 
-    // Error Text Style
-    errorText: {
-      fontSize: 18,
-      color: colors.card,
-      textAlign: 'center',
-      marginTop: 20,
-    },
-    
     // Toast Styles
     toast: {
       position: 'absolute',
-      top: '50%', 
-      left: '25%', 
-      transform: [{ translateX: -50 }, { translateY: -50 }],
-      backgroundColor: colors.textSecondary,
+      bottom: 100, 
+      left: 20,
+      right: 20,
+      backgroundColor: colors.card,
       padding: 16,
-      borderRadius: 8,
+      borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
       shadowColor: colors.shadow,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.5,
-      shadowRadius: 4,
-      elevation: 5,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 6,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      flexDirection: 'row',
     },
     toastText: {
-      color: colors.card,
-      fontSize: 16,
-      fontWeight: '600',
+      color: colors.text,
+      fontSize: 15,
+      fontWeight: '500',
+      marginLeft: 8,
+    },
+    
+    // Error State
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 20,
+    },
+    errorText: {
+      fontSize: 18,
+      color: colors.text,
+      textAlign: 'center',
+      marginTop: 20,
     },
   });
 
@@ -209,7 +323,10 @@ export default function ProductDetailScreen({ route }) {
     return (
       <View style={themedStyles.container}>
         <Header title="Chi tiết sản phẩm" showBackButton={true} />
-        <Text style={themedStyles.errorText}>Không tìm thấy sản phẩm</Text>
+        <View style={themedStyles.errorContainer}>
+          <MaterialIcons name="error-outline" size={60} color={colors.error} />
+          <Text style={themedStyles.errorText}>Không tìm thấy sản phẩm</Text>
+        </View>
       </View>
     );
   }
@@ -219,7 +336,7 @@ export default function ProductDetailScreen({ route }) {
     setToastVisible(true);
     setTimeout(() => {
       setToastVisible(false);
-    }, 1000); // Dismiss after 1 second
+    }, 2000); 
   };
 
   const handleAddToCart = () => {
@@ -243,71 +360,127 @@ export default function ProductDetailScreen({ route }) {
   };
 
   return (
-    <ScrollView style={themedStyles.scrollView} contentContainerStyle={themedStyles.scrollViewContent}>
-      <View style={themedStyles.container}>
-        <Header title="Chi tiết sản phẩm" showBackButton={true} />
-        <ScrollView style={themedStyles.scrollContainer} contentContainerStyle={themedStyles.scrollContent}>
+    <View style={themedStyles.container}>
+      <ScrollView 
+        style={themedStyles.scrollView} 
+        contentContainerStyle={themedStyles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Header title="" showBackButton={true} transparent />
+        
+        {/* Product Image */}
+        <View style={themedStyles.imageContainer}>
           <Image
             source={{ uri: product.image_url }}
             style={themedStyles.productImage}
           />
-          <View style={themedStyles.infoContainer}>
-            <Text style={themedStyles.productName}>{product.product_name}</Text>
-            <Text style={themedStyles.productPrice}>{(product.price || 0).toLocaleString()}₫</Text>
-          </View>
-
-          {/* Quantity Selector */}
-          <View style={themedStyles.quantityContainer}>
-            <Text style={themedStyles.quantityLabel}>Số lượng:</Text>
-            <View style={themedStyles.quantitySelector}>
-              <Pressable
-                onPress={() => quantity > 1 && setQuantity(quantity - 1)}
-                style={({ pressed }) => [
-                  themedStyles.quantityIconButton,
-                  pressed && themedStyles.quantityIconButtonPressed,
-                ]}
-              >
-                <Ionicons name="remove-circle-outline" size={30} color={colors.primary} />
-              </Pressable>
-              <Text style={themedStyles.quantityText}>{quantity}</Text>
-              <Pressable
-                onPress={() => quantity < (product.stock || 10) && setQuantity(quantity + 1)}
-                style={({ pressed }) => [
-                  themedStyles.quantityIconButton,
-                  pressed && themedStyles.quantityIconButtonPressed,
-                ]}
-              >
-                <Ionicons name="add-circle-outline" size={30} color={colors.primary} />
-              </Pressable>
-            </View>
-          </View>
-        </ScrollView>
-
-        {/* Bottom Action Bar */}
-        <View style={themedStyles.actionBar}>
-          <TouchableOpacity
-            style={themedStyles.addToCartButton}
-            onPress={handleAddToCart}
-            activeOpacity={0.8}
-          >
-            <Text style={themedStyles.actionButtonText}>Thêm vào giỏ</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={themedStyles.buyNowButton}
-            onPress={handleBuyNow}
-            activeOpacity={0.8}
-          >
-            <Text style={themedStyles.actionButtonText}>Mua ngay</Text>
-          </TouchableOpacity>
         </View>
 
-        {/* Toast Message */}
-        {toastVisible && (
-          <View style={themedStyles.toast}>
-            <Text style={themedStyles.toastText}>{toastMessage}</Text>
+        {/* Product Info */}
+        <View style={themedStyles.infoSection}>
+          <Text style={themedStyles.brandText}>{product.brand || 'Thương hiệu'}</Text>
+          <Text style={themedStyles.productName}>{product.product_name}</Text>
+          <Text style={themedStyles.productPrice}>{(product.price || 0).toLocaleString()}₫</Text>
+          
+          <View style={themedStyles.divider} />
+        </View>
+
+        {/* Size Options */}
+        <View style={themedStyles.sizeSection}>
+          <Text style={themedStyles.sectionTitle}>Kích thước</Text>
+          <View style={themedStyles.sizeContainer}>
+            {['S', 'M', 'L', 'XL', 'XXL'].map((size, index) => (
+              <TouchableOpacity 
+                key={index} 
+                style={[
+                  themedStyles.sizeOption,
+                  index === 1 ? themedStyles.sizeOptionSelected : null
+                ]}
+              >
+                <Text 
+                  style={[
+                    themedStyles.sizeText, 
+                    index === 1 ? themedStyles.sizeTextSelected : null
+                  ]}
+                >
+                  {size}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
-        )}
+        </View>
+
+        {/* Quantity Selector */}
+        <View style={themedStyles.quantityContainer}>
+          <Text style={themedStyles.quantityLabel}>Số lượng:</Text>
+          <View style={themedStyles.quantitySelector}>
+            <TouchableOpacity
+              style={themedStyles.quantityButton}
+              onPress={() => quantity > 1 && setQuantity(quantity - 1)}
+            >
+              <Ionicons name="remove" size={20} color={colors.primary} />
+            </TouchableOpacity>
+            <Text style={themedStyles.quantityText}>{quantity}</Text>
+            <TouchableOpacity
+              style={themedStyles.quantityButton}
+              onPress={() => quantity < (product.stock || 10) && setQuantity(quantity + 1)}
+            >
+              <Ionicons name="add" size={20} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Description */}
+        <View style={themedStyles.descriptionSection}>
+          <Text style={themedStyles.sectionTitle}>Mô tả sản phẩm</Text>
+          <Text style={themedStyles.descriptionText}>
+            {product.description || 'Sản phẩm thời trang cao cấp với chất liệu vải mềm mại, thoáng mát, thiết kế hiện đại và phù hợp với mọi dáng người.'}
+          </Text>
+        </View>
+
+        {/* Features */}
+        <View style={themedStyles.featuresSection}>
+          <View style={themedStyles.featureItem}>
+            <MaterialIcons name="local-shipping" size={22} color={colors.primary} style={themedStyles.featureIcon} />
+            <Text style={themedStyles.featureText}>Giao hàng miễn phí</Text>
+          </View>
+          <View style={themedStyles.featureItem}>
+            <MaterialIcons name="update" size={22} color={colors.primary} style={themedStyles.featureIcon} />
+            <Text style={themedStyles.featureText}>Đổi trả 30 ngày</Text>
+          </View>
+          <View style={themedStyles.featureItem}>
+            <MaterialIcons name="verified" size={22} color={colors.primary} style={themedStyles.featureIcon} />
+            <Text style={themedStyles.featureText}>Bảo hành 1 năm</Text>
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Action Bar */}
+      <View style={themedStyles.actionBar}>
+        <TouchableOpacity
+          style={themedStyles.addToCartButton}
+          onPress={handleAddToCart}
+          activeOpacity={0.8}
+        >
+          <Text style={themedStyles.addToCartText}>Thêm vào giỏ</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={themedStyles.buyNowButton}
+          onPress={handleBuyNow}
+          activeOpacity={0.8}
+        >
+          <MaterialIcons name="shopping-bag" size={20} color={colors.card} />
+          <Text style={themedStyles.buyNowText}>Mua ngay</Text>
+        </TouchableOpacity>
       </View>
-    </ScrollView>
+
+      {/* Toast Message */}
+      {toastVisible && (
+        <View style={themedStyles.toast}>
+          <Ionicons name="checkmark-circle" size={22} color={colors.primary} />
+          <Text style={themedStyles.toastText}>{toastMessage}</Text>
+        </View>
+      )}
+    </View>
   );
 }
