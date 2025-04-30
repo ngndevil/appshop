@@ -6,8 +6,8 @@ import { useTheme } from '../../context/ThemeContext';
 const { width: screenWidth } = Dimensions.get('window');
 
 // Use percentage of screen width for banner
-const BANNER_WIDTH = screenWidth * 0.9; // 90% of screen width
-const BANNER_HEIGHT = BANNER_WIDTH * 0.47; // Maintain aspect ratio (160/340 = 0.47)
+const BANNER_WIDTH = screenWidth * 0.95; // 90% of screen width
+const BANNER_HEIGHT = BANNER_WIDTH * 0.5; // Maintain aspect ratio (160/340 = 0.47)
 
 const BannerCarousel = () => {
   // Get colors from theme context
@@ -21,15 +21,23 @@ const BannerCarousel = () => {
   const bannerData = [
     {
       id: '1',
-      image: require('../../assets/images/img1.jpg') 
+      image: require('../../assets/images/banner1.jpg') 
     },
     {
       id: '2',
-      image: require('../../assets/images/img2.jpg')
+      image: require('../../assets/images/banner2.jpg')
     },
     {
       id: '3',
-      image: require('../../assets/images/img3.jpg')
+      image: require('../../assets/images/banner3.jpg')
+    },
+    {
+      id: '4',
+      image: require('../../assets/images/banner4.jpg')
+    },
+    {
+      id: '5',
+      image: require('../../assets/images/banner5.jpg')
     },
   ];
 
