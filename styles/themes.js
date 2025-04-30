@@ -75,26 +75,26 @@ export const defaultTheme = {
   // Pink Theme
   export const pinkTheme = {
     // Main colors
-    primary: '#fa9da9', // Deep teal
+    primary: '#ffabb6', // Deep teal
     primaryLight: '#098573', // Medium teal
     primaryLighter: '#93CDCE', // NEW: Light teal-pink blend (sáng)
-    primaryLightest: '#ffbdd5', // Soft pink
+    primaryLightest: '#fccadc', // Soft pink
     
     // Background colors
-    background: '#fad3d8', // Light pink
+    background: '#fcdee2', // Light pink
     card: '#edfcf9', // Keeping white for better readability
   
     // Text colors
-    text: '#333333',
-    textSecondary: '#666666',
-    textLight: '#999999',
+    text: '#113333',
+    textSecondary: '#333333',
+    textLight: '#666666',
     
     // Status colors
     success: '#4CAF50',
     error: '#F44336',
     warning: '#FFC107',
     info: '#2196F3',
-    disabled: '#cccccc',
+    disabled: '#809b9c',
     highlight: '#066255', // Using medium teal for highlight
     
     // Sale colors
@@ -105,7 +105,7 @@ export const defaultTheme = {
     overlay: 'rgba(0, 0, 0, 0.5)',
     overlayLight: 'rgba(0, 0, 0, 0.2)',
     transparent: 'transparent',
-    border: '#e090ad', // Using soft pink for border
+    border: '#97dadb', // Using soft pink for border
     shadow: '#000000',
   };
   
@@ -119,12 +119,12 @@ export const defaultTheme = {
     
     // Background colors
     background: '#ffa875',
-    card: '#ffffff',
+    card: '#fffbed',
     
     // Text colors
-    text: '#333333',
-    textSecondary: '#666666',
-    textLight: '#999999',
+    text: '#7d6200',
+    textSecondary: '#8f886f',
+    textLight: '#666666',
     
     // Status colors
     success: '#4CAF50',
