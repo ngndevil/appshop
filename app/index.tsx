@@ -17,7 +17,7 @@ import OrderStatusScreen from '../views/OrderStatusScreen';
 import OderManagementScreen from '../views/OrderManagementScreen';
 import OrderTrackingScreen from '../views/OrderTrackingScreen';
 import { ThemeProvider } from '../context/ThemeContext';
-
+import InformationUserScreen from '../views/InformationUserScreen';
 const Stack = createStackNavigator();
 
 export default function App() {
@@ -28,6 +28,7 @@ export default function App() {
           <Stack.Screen name="LandingScreen" component={LandingScreen} />
           <Stack.Screen name="LoginScreen" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="InformationUserScreen" component={InformationUserScreen} />
           <Stack.Screen name="OrderHistoryScreen" component={OrderHistoryScreen} />
           <Stack.Screen name="ProductListScreen" component={ProductListScreen} />
           <Stack.Screen name="EditProfileScreen" component={EditProfileScreen} />

@@ -355,10 +355,31 @@ export default function ProductDetailScreen({ route }) {
     showToast(`Đã thêm ${quantity} sản phẩm vào giỏ hàng`);
   };
 
-  const handleBuyNow = () => {
-    showToast('Chức năng này sẽ được thêm trong tương lai');
+// In ProductDetailScreen.js
+const [selectedSize, setSelectedSize] = useState('M'); // Add if size selection is needed
+
+const handleBuyNow = () => {
+  if (!product || !product.id) {
+    showToast('Không thể mua sản phẩm. Vui lòng thử lại.');
+    return;
+  }
+
+  const cartItem = {
+    id: product.id,
+    product_name: product.product_name,
+    price: product.price,
+    quantity,
+    size: selectedSize, // Include if size selection is implemented
   };
 
+  navigation.navigate('InformationUserScreen', {
+    cartItems: [cartItem],
+  });
+};
+
+// Update size selector (if size selection is implemented)
+
+ 
   return (
     <View style={themedStyles.container}>
       <ScrollView 
@@ -386,29 +407,27 @@ export default function ProductDetailScreen({ route }) {
         </View>
 
         {/* Size Options */}
-        <View style={themedStyles.sizeSection}>
-          <Text style={themedStyles.sectionTitle}>Kích thước</Text>
-          <View style={themedStyles.sizeContainer}>
-            {['S', 'M', 'L', 'XL', 'XXL'].map((size, index) => (
-              <TouchableOpacity 
-                key={index} 
-                style={[
-                  themedStyles.sizeOption,
-                  index === 1 ? themedStyles.sizeOptionSelected : null
-                ]}
-              >
-                <Text 
-                  style={[
-                    themedStyles.sizeText, 
-                    index === 1 ? themedStyles.sizeTextSelected : null
-                  ]}
-                >
-                  {size}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+        <View style={themedStyles.sizeContainer}>
+  {['S', 'M', 'L', 'XL', 'XXL'].map((size) => (
+    <TouchableOpacity
+      key={size}
+      style={[
+        themedStyles.sizeOption,
+        selectedSize === size ? themedStyles.sizeOptionSelected : null
+      ]}
+      onPress={() => setSelectedSize(size)}
+    >
+      <Text
+        style={[
+          themedStyles.sizeText,
+          selectedSize === size ? themedStyles.sizeTextSelected : null
+        ]}
+      >
+        {size}
+      </Text>
+    </TouchableOpacity>
+  ))}
+</View>
 
         {/* Quantity Selector */}
         <View style={themedStyles.quantityContainer}>
