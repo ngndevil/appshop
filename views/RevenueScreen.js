@@ -38,6 +38,12 @@ export default function RevenueScreen() {
     setOrders(fetchedOrders);
   };
 
+  const parseValidDate = (rawDate) => {
+    if (!rawDate) return null;
+    const date = new Date(rawDate);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
   const filterData = () => {
     const now = new Date();
     const rangeDate = new Date(now);
@@ -47,8 +53,8 @@ export default function RevenueScreen() {
     else if (selectedRange === '1year') rangeDate.setFullYear(now.getFullYear() - 1);
 
     const filtered = orders.filter(order => {
-      const orderDate = new Date(order.createdAt || order.created_at);
-      return orderDate >= rangeDate;
+      const orderDate = parseValidDate(order.createdAt || order.created_at);
+      return orderDate && orderDate >= rangeDate;
     });
 
     setFilteredData(filtered);
@@ -57,7 +63,9 @@ export default function RevenueScreen() {
   const calculateDailyRevenue = () => {
     const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
     const revenue = orders.reduce((total, order) => {
-      const orderDate = new Date(order.createdAt || order.created_at);
+      const orderDate = parseValidDate(order.createdAt || order.created_at);
+      if (!orderDate) return total;
+
       const dateStr = format(orderDate, 'yyyy-MM-dd');
       if (dateStr === selectedDateStr) {
         const itemRevenue = (order.items || []).reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -72,19 +80,22 @@ export default function RevenueScreen() {
     const groupByDate = {};
 
     filteredData.forEach(order => {
-      const date = new Date(order.createdAt || order.created_at);
-      const dateStr = format(date, 'yyyy-MM-dd'); // for sorting
+      const date = parseValidDate(order.createdAt || order.created_at);
+      if (!date) return;
+
+      const dateStr = format(date, 'yyyy-MM-dd');
       const dayRevenue = (order.items || []).reduce((sum, item) => sum + item.price * item.quantity, 0);
       groupByDate[dateStr] = (groupByDate[dateStr] || 0) + dayRevenue;
     });
 
     const sortedDates = Object.keys(groupByDate).sort();
-
     const labels = [];
     const revenues = [];
 
     sortedDates.forEach(dateStr => {
-      labels.push(format(new Date(dateStr), 'dd/MM')); // for display
+      const parsed = parseValidDate(dateStr);
+      if (!parsed) return;
+      labels.push(format(parsed, 'dd/MM'));
       revenues.push(groupByDate[dateStr]);
     });
 
@@ -94,7 +105,6 @@ export default function RevenueScreen() {
     };
   };
 
-  // Define themed styles inside component to use theme colors
   const themedStyles = StyleSheet.create({
     container: { 
       flex: 1, 
@@ -213,7 +223,7 @@ export default function RevenueScreen() {
           backgroundGradientFrom: colors.card,
           backgroundGradientTo: colors.card,
           decimalPlaces: 0,
-          color: (opacity = 1) => `rgba(139, 69, 19, ${opacity})`, // colors.primary in rgba
+          color: (opacity = 1) => `rgba(139, 69, 19, ${opacity})`,
           labelColor: () => colors.text,
           style: { borderRadius: 16 },
         }}
@@ -222,5 +232,3 @@ export default function RevenueScreen() {
     </View>
   );
 }
-
-

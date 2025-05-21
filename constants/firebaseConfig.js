@@ -9,7 +9,6 @@ const firebaseConfig = {
   projectId: 'clothing-store-1165d',
   storageBucket: 'clothing-store-1165d.appspot.com',
 };
-
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
