@@ -13,6 +13,7 @@ export default function AddProductScreen() {
   const { colors } = useTheme();
   
   const [productId, setProductId] = useState('');
+  const [category_id, setcategory_id] = useState('')
   const [productName, setProductName] = useState('');
   const [price, setPrice] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -21,7 +22,7 @@ export default function AddProductScreen() {
   const navigation = useNavigation();
 
   const handleAddProduct = async () => {
-    if (!productId || !productName || !price || !imageUrl || !stock) {
+    if (!productId || !category_id || !productName || !price || !imageUrl || !stock) {
       Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin.');
       return;
     }
@@ -37,6 +38,7 @@ export default function AddProductScreen() {
     try {
       const newProduct = {
         product_id: productId,
+        category_id: category_id,
         product_name: productName,
         price: parsedPrice,
         image_url: imageUrl,
@@ -122,6 +124,13 @@ export default function AddProductScreen() {
           onChangeText={setProductId} 
         />
         <TextInput 
+          placeholder="Loại sản phẩm" 
+          placeholderTextColor={colors.textLight} 
+          style={themedStyles.input} 
+          value={category_id} 
+          onChangeText={setcategory_id} 
+        />
+        <TextInput 
           placeholder="Tên sản phẩm" 
           placeholderTextColor={colors.textLight} 
           style={themedStyles.input} 
@@ -137,7 +146,7 @@ export default function AddProductScreen() {
           onChangeText={setPrice} 
         />
         <TextInput 
-          placeholder="Link hình ảnh" 
+          placeholder="Đường dẫn hình ảnh" 
           placeholderTextColor={colors.textLight} 
           style={themedStyles.input} 
           value={imageUrl} 
