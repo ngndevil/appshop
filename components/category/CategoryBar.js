@@ -19,13 +19,15 @@ const CategoryBar = ({ onSelectCategory, selectedCategory = 'all' }) => {
   // Category data với icon từ MaterialCommunityIcons
   const categories = [
     { id: 'all', name: 'ALL', iconName: 'apps' },
-    { id: 'shirt', name: 'Áo', iconName: 'tshirt-crew' },
-    { id: 'pants', name: 'Quần', iconName: 'human-male' },
-    { id: 'dress', name: 'Váy', iconName: 'human-female' },
-    { id: 'shoes', name: 'Giày', iconName: 'shoe-formal' },
-    { id: 'hat', name: 'Mũ', iconName: 'hat-fedora' },
-    { id: 'accessories', name: 'Phụ kiện', iconName: 'watch' },
-    { id: 'sale', name: 'SALE', iconName: 'sale' },
+    { id: 'T-Shirt', name: 'T-Shirt', iconName: 'tshirt-crew' },
+    { id: 'Jeans', name: 'Jeans', iconName: 'jeans' },
+    { id: 'Sneakers', name: 'Sneakers', iconName: 'shoe-sneaker' },
+    { id: 'Boots', name: 'Boots', iconName: 'shoe-formal' },
+    { id: 'Sweater', name: 'Sweater', iconName: 'tshirt-v' },
+    { id: 'Sandals', name: 'Sandals', iconName: 'shoe-sandal' },
+    { id: 'Jacket', name: 'Jacket', iconName: 'jacket' },
+    { id: 'Hat', name: 'Hat', iconName: 'hat-fedora' },
+     { id: 'Shorts', name: 'Shorts', iconName: 'hat-fedora' },
   ];
 
   // Flatlist reference

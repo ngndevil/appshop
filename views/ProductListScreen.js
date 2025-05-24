@@ -148,13 +148,13 @@ export default function ProductListScreen() {
     setFilteredProducts(sortedProducts);
   };
 
-  // Filter products by category
+  // Filter products by category_id
   const handleFilterCategory = useCallback((category) => {
     if (!category) {
       setFilteredProducts(products);
       return;
     }
-    const filtered = products.filter((product) => product.category === category);
+    const filtered = products.filter((product) => product.category_id === category);
     setFilteredProducts(filtered);
   }, [products]);
 
