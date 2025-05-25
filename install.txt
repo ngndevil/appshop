@@ -1,0 +1,22 @@
+# HƯỚNG DẪN CÀI ĐẶT THƯ VIỆN
+
+## Danh sách thư viện cần cài đặt
+- react-native-chart-kit và date-fns (biểu đồ và xử lý ngày)
+- @react-native-community/datetimepicker (bộ chọn ngày giờ)
+- react-native-reanimated (animation)
+- @ptomasroos/react-native-multi-slider (thanh trượt đa giá trị)
+- rn-slide-button (nút trượt)
+- @react-native-async-storage/async-storage (lưu trữ local)
+
+## Lệnh cài đặt
+npm install react-native-chart-kit date-fns
+npm install @react-native-community/datetimepicker@7.6.2
+npm install react-native-reanimated
+npm install @ptomasroos/react-native-multi-slider
+npm install rn-slide-button
+npm install @react-native-async-storage/async-storage
+npm install --save-dev @react-native-community/cli
+
+npm install react-native-snap-carousel
+npm install react-native-vector-icons
+
