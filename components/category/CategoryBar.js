@@ -20,14 +20,14 @@ const CategoryBar = ({ onSelectCategory, selectedCategory = 'all' }) => {
   const categories = [
     { id: 'all', name: 'ALL', iconName: 'apps' },
     { id: 'T-Shirt', name: 'T-Shirt', iconName: 'tshirt-crew' },
-    { id: 'Jeans', name: 'Jeans', iconName: 'jeans' },
+    { id: 'Jeans', name: 'Jeans', iconName: 'tag' },
     { id: 'Sneakers', name: 'Sneakers', iconName: 'shoe-sneaker' },
     { id: 'Boots', name: 'Boots', iconName: 'shoe-formal' },
-    { id: 'Sweater', name: 'Sweater', iconName: 'tshirt-v' },
-    { id: 'Sandals', name: 'Sandals', iconName: 'shoe-sandal' },
-    { id: 'Jacket', name: 'Jacket', iconName: 'jacket' },
+    { id: 'Sweater', name: 'Sweater', iconName: 'tshirt-crew' },
+    { id: 'Sandals', name: 'Sandals', iconName: 'foot-print' },
+    { id: 'Jacket', name: 'Jacket', iconName: 'tshirt-crew' },
     { id: 'Hat', name: 'Hat', iconName: 'hat-fedora' },
-     { id: 'Shorts', name: 'Shorts', iconName: 'hat-fedora' },
+     { id: 'Shorts', name: 'Shorts', iconName: 'hanger' },
   ];
 
   // Flatlist reference
