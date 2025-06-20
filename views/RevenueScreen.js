@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -10,7 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
-import { BarChart } from 'react-native-chart-kit';
+import { LineChart } from 'react-native-chart-kit';
 import { format } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import SimpleHeader from '../components/common/SimpleHeader';
@@ -66,7 +65,7 @@ export default function RevenueScreen() {
     const fromDate = new Date(now);
 
     if (selectedRange === '7days') fromDate.setDate(now.getDate() - 6);
-    else if (selectedRange === '30days') fromDate.setDate(now.getDate() - 27);
+    else if (selectedRange === '30days') fromDate.setDate(now.getDate() - 29);
     else if (selectedRange === '1year') fromDate.setFullYear(now.getFullYear() - 1);
 
     fromDate.setHours(0, 0, 0, 0);
@@ -101,93 +100,59 @@ export default function RevenueScreen() {
 
   const prepareChartData = () => {
     if (!filteredOrders || filteredOrders.length === 0) {
-      return { labels: [], datasets: [{ data: [] }] };
-    }
-
-    if (selectedRange === '1year') {
-      const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
-      const revenueByQuarter = [0, 0, 0, 0];
-      filteredOrders.forEach(order => {
-        const rawDate = order.createdAt || order.created_at;
-        if (!rawDate) return;
-        const date = new Date(rawDate);
-        if (isNaN(date)) return;
-        const month = date.getMonth();
-        const quarterIndex = Math.floor(month / 3);
-        const revenue = (order.items || [])
-          .filter(item => item && typeof item.price === 'number' && typeof item.quantity === 'number')
-          .reduce((sum, item) => sum + item.price * item.quantity, 0);
-        revenueByQuarter[quarterIndex] += revenue;
-      });
-      return {
-        labels: quarters,
-        datasets: [{ data: revenueByQuarter.map(v => Number(v) || 0) }],
-      };
-    }
-
-    if (selectedRange === '30days') {
-      const weeks = ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4'];
-      const revenueByWeek = [0, 0, 0, 0];
-      const now = new Date();
-
-      filteredOrders.forEach(order => {
-        const rawDate = order.createdAt || order.created_at;
-        if (!rawDate) return;
-        const date = new Date(rawDate);
-        if (isNaN(date)) return;
-        const daysAgo = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-        const weekIndex = Math.min(Math.floor(daysAgo / 7), 3);
-        const revenue = (order.items || [])
-          .filter(item => item && typeof item.price === 'number' && typeof item.quantity === 'number')
-          .reduce((sum, item) => sum + item.price * item.quantity, 0);
-        revenueByWeek[3 - weekIndex] += revenue;
-      });
-
-      return {
-        labels: weeks,
-        datasets: [{ data: revenueByWeek.map(v => Number(v) || 0) }],
-      };
+      return { labels: ['Không có'], datasets: [{ data: [0] }] };
     }
 
     const dateMap = {};
+
     filteredOrders.forEach(order => {
       const rawDate = order.createdAt || order.created_at;
       if (!rawDate) return;
       const date = new Date(rawDate);
       if (isNaN(date)) return;
-      const dateStr = format(date, 'dd/MM');
-      const revenue = (order.items || [])
-        .filter(item => item && typeof item.price === 'number' && typeof item.quantity === 'number')
-        .reduce((sum, item) => sum + item.price * item.quantity, 0);
-      dateMap[dateStr] = (dateMap[dateStr] || 0) + revenue;
+
+      let label = '';
+      if (selectedRange === '1year') {
+        label = `Tháng ${date.getMonth() + 1}`;
+      } else {
+        label = format(date, 'dd/MM');
+      }
+
+      const revenue = (order.items || []).reduce((sum, item) => sum + item.price * item.quantity, 0);
+      dateMap[label] = (dateMap[label] || 0) + revenue;
     });
 
-    const labels = Object.keys(dateMap);
-    const data = labels.map(l => Number(dateMap[l]) || 0);
+    const sortedLabels = Object.keys(dateMap).sort((a, b) => {
+      const getMonth = (label) => parseInt(label.replace('Tháng ', ''));
+      if (selectedRange === '1year') return getMonth(a) - getMonth(b);
+      const parseDate = (str) => {
+        const [d, m] = str.split('/').map(Number);
+        return new Date(2024, m - 1, d);
+      };
+      return parseDate(a) - parseDate(b);
+    });
 
-    return {
-      labels,
-      datasets: [{ data }],
-    };
+    const data = sortedLabels.map(label => dateMap[label] ?? 0);
+    return { labels: sortedLabels, datasets: [{ data }] };
   };
 
   const formatYAxisLabel = (value) => {
     const num = Number(value);
-    if (isNaN(num)) return '0M';
-    return `${Math.round(num / 1000000)}M`;
+    if (isNaN(num)) return '0';
+    if (num >= 1_000_000_000) return `${(num / 1_000_000_000).toFixed(1)}B`;
+    if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+    if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
+    return num.toString();
   };
 
   const getYAxisMax = () => {
     try {
       const chartData = prepareChartData();
-      const data = chartData?.datasets?.[0]?.data;
-      if (!Array.isArray(data) || data.length === 0) return 2000000;
-
-      const max = Math.max(...data);
-      if (isNaN(max)) return 2000000;
-
-      const step = max > 20000000 ? 10000000 : 2000000;
-      return Math.ceil(max / step) * step || step;
+      const data = chartData?.datasets?.[0]?.data || [];
+      const max = Math.max(...data, 0);
+      if (isNaN(max) || max === 0) return 2000000;
+      const step = max > 100000000 ? 20000000 : max > 20000000 ? 10000000 : 2000000;
+      return Math.ceil(max / step) * step;
     } catch (e) {
       return 2000000;
     }
@@ -201,9 +166,12 @@ export default function RevenueScreen() {
     </View>
   );
 
+  const yMax = getYAxisMax();
+  const segments = Math.max(1, yMax / (yMax > 100000000 ? 20000000 : yMax > 20000000 ? 10000000 : 2000000));
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <SimpleHeader title="Thống kê doanh thu" showBackButton />
+      <SimpleHeader title="Thống kê doanh thu" />
 
       <View style={styles.filterRow}>
         {['7days', '30days', '1year'].map(range => (
@@ -243,12 +211,11 @@ export default function RevenueScreen() {
           : `Doanh thu ngày ${format(selectedDate, 'dd/MM/yyyy')}: ${dailyRevenue.toLocaleString()}₫`}
       </Text>
 
-      <BarChart
+      <LineChart
         data={prepareChartData()}
         width={screenWidth - 32}
         height={250}
         fromZero
-        showValuesOnTopOfBars
         yAxisLabel=""
         yAxisSuffix=""
         yAxisInterval={1}
@@ -256,7 +223,7 @@ export default function RevenueScreen() {
         withOuterLines
         yLabelsOffset={8}
         formatYLabel={formatYAxisLabel}
-        segments={Math.floor(getYAxisMax() / (getYAxisMax() > 20000000 ? 10000000 : 2000000))}
+        segments={segments}
         chartConfig={{
           backgroundGradientFrom: '#fff',
           backgroundGradientTo: '#fff',
