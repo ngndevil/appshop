@@ -16,7 +16,7 @@ import SimpleHeader from '../components/common/SimpleHeader';
 
 const screenWidth = Dimensions.get('window').width;
 
-export default function RevenueScreen() {
+export default function RevenueScreen({navigation}) {
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [selectedRange, setSelectedRange] = useState(null);
@@ -171,7 +171,7 @@ export default function RevenueScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <SimpleHeader title="Thống kê doanh thu" />
+      <SimpleHeader title="Thống kê doanh thu" onBack={() => navigation.goBack()}/>
 
       <View style={styles.filterRow}>
         {['7days', '30days', '1year'].map(range => (
