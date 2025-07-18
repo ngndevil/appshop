@@ -15,7 +15,7 @@ export default function ProductDetailScreen({ route }) {
   const { product } = route.params || {};
   const navigation = useNavigation();
   const [quantity, setQuantity] = useState(1);
-  const { addToCart } = useCart();
+  const { addToCart ,cartItems} = useCart();
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const windowWidth = Dimensions.get('window').width;
@@ -344,40 +344,50 @@ export default function ProductDetailScreen({ route }) {
       showToast('Không thể thêm sản phẩm vào giỏ hàng. Vui lòng thử lại.');
       return;
     }
-
-    const cartItem = {
-      ...product,
-      quantity,
-    };
-
-    console.log('Adding to cart:', cartItem);
+    const cartItem = { ...product, quantity, size: selectedSize }; // Thêm size vào item
     addToCart(cartItem);
-    showToast(`Đã thêm ${quantity} sản phẩm vào giỏ hàng`);
+    showToast(`Đã thêm ${quantity} "${product.product_name}" vào giỏ hàng`);
   };
 
-// In ProductDetailScreen.js
-const [selectedSize, setSelectedSize] = useState('M'); // Add if size selection is needed
+const [selectedSize, setSelectedSize] = useState('M'); 
 
 const handleBuyNow = () => {
-  if (!product || !product.id) {
-    showToast('Không thể mua sản phẩm. Vui lòng thử lại.');
-    return;
-  }
+    if (!product || !product.id) {
+      showToast('Không thể mua sản phẩm. Vui lòng thử lại.');
+      return;
+    }
+    // 1. Tạo sản phẩm mới từ trang chi tiết
+    const newItem = {
+      id: product.id,
+      product_name: product.product_name,
+      price: product.price,
+      quantity: quantity,
+      size: selectedSize,
+      image_url: product.image_url, // Thêm image_url để hiển thị nếu cần
+    };
 
-  const cartItem = {
-    id: product.id,
-    product_name: product.product_name,
-    price: product.price,
-    quantity,
-    size: selectedSize, // Include if size selection is implemented
+    // 2. Lấy danh sách sản phẩm hiện có trong giỏ hàng
+    // Tạo một bản sao để có thể chỉnh sửa
+    let finalItems = [...cartItems];
+
+    // 3. Kiểm tra xem sản phẩm mới có trùng với sản phẩm nào trong giỏ không (dựa trên id và size)
+    const existingItemIndex = finalItems.findIndex(
+      item => item.id === newItem.id && item.size === newItem.size
+    );
+
+    if (existingItemIndex > -1) {
+      // Nếu đã tồn tại, cộng dồn số lượng
+      finalItems[existingItemIndex].quantity += newItem.quantity;
+    } else {
+      // Nếu chưa tồn tại, thêm mới vào danh sách
+      finalItems.push(newItem);
+    }
+    
+    // 4. Điều hướng tới màn hình thông tin với danh sách sản phẩm cuối cùng
+    navigation.navigate('InformationUserScreen', {
+      cartItems: finalItems,
+    });
   };
-
-  navigation.navigate('InformationUserScreen', {
-    cartItems: [cartItem],
-  });
-};
-
-// Update size selector (if size selection is implemented)
 
  
   return (

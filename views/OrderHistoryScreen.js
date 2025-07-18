@@ -130,7 +130,7 @@ const OrderHistoryScreen = () => {
           Tổng cộng: {(item.total || 0).toLocaleString()}₫
         </Text>
         <Text style={themedStyles.orderItemsTitle}>Sản phẩm:</Text>
-        {item.items.map((product, index) => (
+        {item.items?.map((product, index) => (
           <View key={index} style={themedStyles.orderItem}>
             <Text style={themedStyles.orderItemName}>
               {product.product_name || product.title} (x{product.quantity})

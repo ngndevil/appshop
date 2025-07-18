@@ -56,31 +56,32 @@ const Header = (props) => {
   const { query, showSuggestions, isExpanded } = searchState;
 
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
-  
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setIsAuthenticated(true);
-        try {
-          const adminDocRef = doc(db, 'admin', 'adminacc');
-          const adminDoc = await getDoc(adminDocRef);
-          const adminData = adminDoc.data();
-
-          const emails = Object.values(adminData || {});
-          const isAdminUser = emails.includes(user.email);
-          setIsAdmin(isAdminUser);
-        } catch (error) {
-          console.error('Lỗi kiểm tra quyền admin:', error);
-        }
-      } else {
-        setIsAuthenticated(false);
-        setLoading(false);
-        navigation.navigate('LoginScreen');
+  const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      setIsAuthenticated(true);
+      try {
+        const adminDocRef = doc(db, 'admin', 'adminacc');
+        const adminDoc = await getDoc(adminDocRef);
+        const adminData = adminDoc.data();
+        const emails = Object.values(adminData || {});
+        const isAdminUser = emails.includes(user.email);
+        setIsAdmin(isAdminUser);
+      } catch (error) {
+        console.error('Lỗi kiểm tra quyền admin:', error);
+      } finally {
+        // Luôn tắt loading sau khi kiểm tra xong
+        setLoading(false); 
       }
-    });
-
-    return () => unsubscribe();
-  }, [navigation]);
+    } else {
+      setIsAuthenticated(false);
+      setIsAdmin(false); // Reset quyền admin khi logout
+      setLoading(false);
+      navigation.navigate('LoginScreen'); 
+    }
+  });
+  return () => unsubscribe();
+}, [navigation]);
   
   useFocusEffect(
     React.useCallback(() => {
@@ -439,16 +440,19 @@ const Header = (props) => {
         {!isExpanded && (
           <View style={themedStyles.rightContainer}>
             {rightComponent}
-            {!isAdmin && 
-              <TouchableOpacity style={themedStyles.orderHistoryButton} onPress={handleOrderHistoryPress}>
-                <Text style={themedStyles.orderHistoryText}>Lịch sử</Text>
-              </TouchableOpacity>
-            }
-            {isAdmin &&
-              <TouchableOpacity style={themedStyles.orderHistoryButton} onPress={() => navigation.navigate('OrderManagementScreen')}>
-              <Text style={themedStyles.orderHistoryText}>Đơn hàng</Text>
-            </TouchableOpacity>
-            }
+           <TouchableOpacity
+          style={themedStyles.orderHistoryButton}
+          onPress={() => {
+           // Quyết định điều hướng dựa trên quyền admin
+           const screenName = isAdmin ? 'OrderManagementScreen' : 'OrderHistoryScreen';
+           navigation.navigate(screenName);
+        }}
+>
+        {/* Hiển thị text dựa trên quyền admin */}
+        <Text style={themedStyles.orderHistoryText}>
+        {isAdmin ? 'Đơn hàng' : 'Lịch sử'}
+        </Text>
+        </TouchableOpacity>
             <TouchableOpacity style={themedStyles.cartIconContainer} onPress={() => navigation.navigate('ProductCartScreen')}>
               <Image source={require('../../assets/images/cart.png')} style={themedStyles.cartIcon} />
               {cartItemCount > 0 && (

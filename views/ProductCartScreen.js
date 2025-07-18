@@ -264,8 +264,9 @@
 //   },
 // });
 
+
 // export default ProductCartScreen;
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -273,53 +274,26 @@ import {
   Image,
   TouchableOpacity,
   StyleSheet,
-  TextInput,
-  Modal,
-  ActivityIndicator,
 } from 'react-native';
 import Header from '../components/common/Header';
 import { useCart } from '../context/CartProvider';
-import { handleCheckout } from './OrderService'; 
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 
 const ProductCartScreen = () => {
   const { colors } = useTheme();
-  const { cartItems, increment, decrement, removeItem, setCartItems } = useCart();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [customerInfo, setCustomerInfo] = useState({
-    name: '',
-    phone: '',
-    address: '',
-  });
-  const [loading, setLoading] = useState(false);
+  const navigation = useNavigation();
+  const { cartItems, increment, decrement, removeItem } = useCart();
 
   const totalPrice = cartItems.reduce((total, item) => total + (item.price || 0) * item.quantity, 0);
 
-  const onConfirmCheckout = async () => {
-    if (!customerInfo.name || !customerInfo.phone || !customerInfo.address) {
-      alert('Vui lòng điền đầy đủ thông tin.');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const success = await handleCheckout(cartItems, customerInfo);
-      if (success) {
-        setCartItems([]);
-        setModalVisible(false);
-        alert('Đặt hàng thành công!');
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      alert('Đã xảy ra lỗi. Vui lòng thử lại.');
-    } finally {
-      setLoading(false);
-    }
+  const handleNavigateToCheckout = () => {
+    navigation.navigate('InformationUserScreen', { cartItems });
   };
 
   const renderItem = ({ item }) => {
     const itemTotal = (item.price || 0) * item.quantity;
-    
+
     return (
       <View style={themedStyles.itemContainer}>
         <Image source={{ uri: item.image_url || item.image }} style={themedStyles.image} />
@@ -503,7 +477,7 @@ const ProductCartScreen = () => {
     },
   });
 
-  return (
+return (
     <View style={themedStyles.container}>
       <Header title="Giỏ hàng" showBackButton={true} />
       {cartItems.length === 0 ? (
@@ -518,62 +492,17 @@ const ProductCartScreen = () => {
           />
           <View style={themedStyles.footer}>
             <Text style={themedStyles.totalText}>Tổng cộng: {totalPrice.toLocaleString()}₫</Text>
-            <TouchableOpacity style={themedStyles.checkoutButton} onPress={() => setModalVisible(true)}>
+            {/* THAY ĐỔI Ở ĐÂY */}
+            <TouchableOpacity style={themedStyles.checkoutButton} onPress={handleNavigateToCheckout}>
               <Text style={themedStyles.checkoutButtonText}>Thanh toán</Text>
             </TouchableOpacity>
           </View>
         </>
       )}
-
-      {/* Modal nhập thông tin khách hàng */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={themedStyles.modalBackground}>
-          <View style={themedStyles.modalContainer}>
-            <Text style={themedStyles.modalTitle}>Thông tin người nhận</Text>
-            <TextInput
-              placeholder="Họ tên"
-              placeholderTextColor={colors.textLight}
-              style={themedStyles.input}
-              value={customerInfo.name}
-              onChangeText={(text) => setCustomerInfo({ ...customerInfo, name: text })}
-            />
-            <TextInput
-              placeholder="Số điện thoại"
-              placeholderTextColor={colors.textLight}
-              keyboardType="phone-pad"
-              style={themedStyles.input}
-              value={customerInfo.phone}
-              onChangeText={(text) => setCustomerInfo({ ...customerInfo, phone: text })}
-            />
-            <TextInput
-              placeholder="Địa chỉ"
-              placeholderTextColor={colors.textLight}
-              style={themedStyles.input}
-              value={customerInfo.address}
-              onChangeText={(text) => setCustomerInfo({ ...customerInfo, address: text })}
-            />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={[themedStyles.modalButton, themedStyles.cancelButton]}>
-                <Text style={themedStyles.cancelButtonText}>Hủy</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={onConfirmCheckout} style={themedStyles.modalButton}>
-                {loading ? (
-                  <ActivityIndicator color={colors.card} />
-                ) : (
-                  <Text style={{ color: colors.card }}>Xác nhận</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      
+      {/* --- MODAL ĐÃ BỊ XÓA --- */}
     </View>
   );
 };
 
-export default ProductCartScreen;
+export default ProductCartScreen
