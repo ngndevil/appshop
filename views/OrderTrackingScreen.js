@@ -27,17 +27,24 @@ const OrderTrackingScreen = ({ route, navigation }) => {
   );
   const [isCancelling, setIsCancelling] = useState(false);
 
-  const formatDate = (createdAt) => {
+const formatDate = (createdAt) => {
     try {
-      if (!createdAt) return 'Không xác định';
-      if (createdAt.seconds) {
-        return new Date(createdAt.seconds * 1000).toLocaleString('vi-VN');
+      if (!createdAt) {
+        return 'Không xác định';
       }
-      return new Date(createdAt).toLocaleString('vi-VN');
+      if (typeof createdAt.toDate === 'function') {
+        return createdAt.toDate().toLocaleString('vi-VN');
+      }
+      const date = new Date(createdAt);
+      if (isNaN(date.getTime())) {
+        return 'Ngày không hợp lệ';
+      }
+      return date.toLocaleString('vi-VN');
     } catch (e) {
-      return 'Invalid Date';
+      return 'Lỗi định dạng ngày';
     }
   };
+
 
   const updateStatus = async (newStatus) => {
     try {
