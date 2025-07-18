@@ -6,7 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
-   BackHandler,
+  BackHandler, // Thêm để xử lý nút back vật lý
 } from 'react-native';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../constants/firebaseConfig';
@@ -14,6 +14,7 @@ import { getAuth } from 'firebase/auth';
 import Header from '../components/common/Header';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
+
 const OrderHistoryScreen = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,49 +23,82 @@ const OrderHistoryScreen = () => {
   const navigation = useNavigation();
   const { colors } = useTheme();
 
- useFocusEffect(
+  /**
+   * Hàm chuyển đổi ngày tháng an toàn, chống crash ứng dụng.
+   * Sẽ trả về một đối tượng Date hợp lệ hoặc null.
+   */
+  const safeGetDate = (timestamp) => {
+    try {
+      // Ưu tiên xử lý đối tượng Timestamp của Firebase
+      if (timestamp && typeof timestamp.toDate === 'function') {
+        return timestamp.toDate();
+      }
+      // Xử lý các dạng khác (ví dụ: chuỗi ISO)
+      const date = new Date(timestamp);
+      // Nếu ngày không hợp lệ (ví dụ: new Date(null)), trả về null
+      if (isNaN(date.getTime())) {
+        return null;
+      }
+      return date;
+    } catch (e) {
+      // Nếu có bất kỳ lỗi nào xảy ra, trả về null
+      return null;
+    }
+  };
+
+  // Hàm điều hướng về trang chủ
+  const navigateToHome = () => {
+    navigation.navigate('ProductListScreen');
+  };
+
+  // Bắt sự kiện nhấn nút "back" vật lý trên Android
+  useFocusEffect(
     React.useCallback(() => {
       const onBackPress = () => {
-        // Điều hướng về trang chủ khi nút back vật lý được nhấn
-        navigation.navigate('ProductListScreen');
-        // Trả về true để ngăn chặn hành vi mặc định (thoát app/lỗi)
-        return true;
+        navigateToHome(); // Gọi hàm điều hướng về trang chủ
+        return true; // Ngăn chặn hành vi mặc định
       };
 
-      // Thêm event listener
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
 
-      // Gỡ event listener khi màn hình không còn được focus
       return () => subscription.remove();
-    }, [navigation])
+    }, []) // Dependency rỗng để chỉ chạy một lần khi focus
   );
 
   useEffect(() => {
     const fetchOrders = async () => {
-      if (!user) return;
-
+      if (!user) {
+        setLoading(false);
+        return;
+      }
       try {
         const q = query(collection(db, 'orders'), where('userId', '==', user.uid));
         const querySnapshot = await getDocs(q);
-        const orderList = querySnapshot.docs
-          .map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
-          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); // Sắp xếp theo ngày mới nhất
+        const orderList = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        // Sắp xếp một cách an toàn
+        orderList.sort((a, b) => {
+          const dateA = safeGetDate(a.createdAt);
+          const dateB = safeGetDate(b.createdAt);
+          // Đẩy các đơn hàng có ngày không hợp lệ xuống cuối
+          if (!dateB) return -1;
+          if (!dateA) return 1;
+          return dateB.getTime() - dateA.getTime();
+        });
+
         setOrders(orderList);
       } catch (error) {
-        console.error('Error fetching orders:', error);
+        console.error("Lỗi khi tải lịch sử đơn hàng:", error);
       } finally {
         setLoading(false);
       }
     };
-
     fetchOrders();
   }, [user]);
-const navigateToHome = () => {
-    navigation.navigate('ProductListScreen');
-  };
+
   // Create themed styles inside component
   const themedStyles = StyleSheet.create({
     container: {
@@ -138,30 +172,38 @@ const navigateToHome = () => {
     },
   });
 
-  const renderOrderItem = ({ item }) => (
-    <TouchableOpacity onPress={() => navigation.navigate('OrderStatus', { order: item })}>
-      <View style={themedStyles.orderContainer}>
-        <Text style={themedStyles.orderId}>Mã đơn hàng: {item.id}</Text>
-        <Text style={themedStyles.orderDate}>
-          Ngày đặt: {new Date(item.createdAt).toLocaleString()}
-        </Text>
-        <Text style={themedStyles.orderTotal}>
-          Tổng cộng: {(item.total || 0).toLocaleString()}₫
-        </Text>
-        <Text style={themedStyles.orderItemsTitle}>Sản phẩm:</Text>
-        {item.items?.map((product, index) => (
-          <View key={index} style={themedStyles.orderItem}>
-            <Text style={themedStyles.orderItemName}>
-              {product.product_name || product.title} (x{product.quantity})
-            </Text>
-            <Text style={themedStyles.orderItemPrice}>
-              {(product.price * product.quantity).toLocaleString()}₫
-            </Text>
-          </View>
-        ))}
-      </View>
-    </TouchableOpacity>
-  );
+  const renderOrderItem = ({ item }) => {
+    // Sử dụng hàm an toàn để lấy và định dạng ngày
+    const orderDate = safeGetDate(item.createdAt);
+    const displayDate = orderDate
+      ? orderDate.toLocaleString('vi-VN') // Định dạng 'ngày/tháng/năm, giờ:phút:giây'
+      : 'Ngày không hợp lệ';
+
+    return (
+      <TouchableOpacity onPress={() => navigation.navigate('OrderStatus', { order: item })}>
+        <View style={themedStyles.orderContainer}>
+          <Text style={themedStyles.orderId}>Mã đơn hàng: {item.id}</Text>
+          <Text style={themedStyles.orderDate}>
+            Ngày đặt: {displayDate}
+          </Text>
+          <Text style={themedStyles.orderTotal}>
+            Tổng cộng: {(item.total || 0).toLocaleString()}₫
+          </Text>
+          <Text style={themedStyles.orderItemsTitle}>Sản phẩm:</Text>
+          {item.items?.map((product, index) => (
+            <View key={index} style={themedStyles.orderItem}>
+              <Text style={themedStyles.orderItemName}>
+                {product.product_name || product.title} (x{product.quantity})
+              </Text>
+              <Text style={themedStyles.orderItemPrice}>
+                {(product.price * product.quantity).toLocaleString()}₫
+              </Text>
+            </View>
+          ))}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -174,7 +216,11 @@ const navigateToHome = () => {
 
   return (
     <View style={themedStyles.container}>
-<Header title="Lịch sử đơn hàng" showBackButton={true} onBackPress={navigateToHome} />
+      <Header
+        title="Lịch sử đơn hàng"
+        showBackButton={true}
+        onBackPress={navigateToHome} // Thêm lại để xử lý nút "←" trên Header
+      />
       {orders.length === 0 ? (
         <Text style={themedStyles.emptyText}>Bạn chưa có đơn hàng nào.</Text>
       ) : (
