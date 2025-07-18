@@ -33,6 +33,7 @@ const Header = (props) => {
     showBackButton = false,
     rightComponent = null,
     showSearchBar = false,
+    onBackPress,
     onSearch = () => {},
     searchSuggestions = [],
     onSelectProduct = () => {},
@@ -157,7 +158,13 @@ const Header = (props) => {
   const handleSearchAreaPress = (e) => {
     e.stopPropagation();
   };
-
+const handleBackPress = () => {
+    if (onBackPress) {
+      onBackPress(); // Nếu có hàm tùy chỉnh thì gọi nó
+    } else {
+      navigation.goBack(); // Nếu không thì dùng mặc định
+    }
+  };
   const renderSuggestion = ({ item }) => (
     <TouchableOpacity style={themedStyles.suggestionItem} onPress={() => handleSelectSuggestion(item)}>
       <Image
@@ -394,7 +401,7 @@ const Header = (props) => {
       <View style={themedStyles.header}>
         <View style={themedStyles.leftContainer}>
           {showBackButton ? (
-            <TouchableOpacity onPress={() => navigation.goBack()} style={themedStyles.backButtonContainer}>
+            <TouchableOpacity onPress={handleBackPress} style={themedStyles.backButtonContainer}>
               <Text style={themedStyles.backButton}>←</Text>
             </TouchableOpacity>
           ) : showSearchBar && !isExpanded ? (

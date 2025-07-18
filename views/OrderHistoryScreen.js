@@ -6,14 +6,14 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+   BackHandler,
 } from 'react-native';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../constants/firebaseConfig';
 import { getAuth } from 'firebase/auth';
 import Header from '../components/common/Header';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
-
 const OrderHistoryScreen = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +21,23 @@ const OrderHistoryScreen = () => {
   const user = auth.currentUser;
   const navigation = useNavigation();
   const { colors } = useTheme();
+
+ useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        // Điều hướng về trang chủ khi nút back vật lý được nhấn
+        navigation.navigate('ProductListScreen');
+        // Trả về true để ngăn chặn hành vi mặc định (thoát app/lỗi)
+        return true;
+      };
+
+      // Thêm event listener
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      // Gỡ event listener khi màn hình không còn được focus
+      return () => subscription.remove();
+    }, [navigation])
+  );
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -45,7 +62,9 @@ const OrderHistoryScreen = () => {
 
     fetchOrders();
   }, [user]);
-
+const navigateToHome = () => {
+    navigation.navigate('ProductListScreen');
+  };
   // Create themed styles inside component
   const themedStyles = StyleSheet.create({
     container: {
@@ -155,7 +174,7 @@ const OrderHistoryScreen = () => {
 
   return (
     <View style={themedStyles.container}>
-      <Header title="Lịch sử đơn hàng" showBackButton={true} />
+<Header title="Lịch sử đơn hàng" showBackButton={true} onBackPress={navigateToHome} />
       {orders.length === 0 ? (
         <Text style={themedStyles.emptyText}>Bạn chưa có đơn hàng nào.</Text>
       ) : (
